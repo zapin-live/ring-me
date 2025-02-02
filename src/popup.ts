@@ -35,7 +35,7 @@ export class Activation {
 
   async updateUi() {
     const disabledUntil = await this.db.get("disabledUntil");
-    if (disabledUntil) {
+    if (disabledUntil && disabledUntil > Date.now()) {
       document.getElementById('text-activationStatus')!.innerHTML = 'Disabled';
       document.getElementById('text-statusDescription')!.innerHTML = `until ${new Date(disabledUntil).toLocaleString()}`;
       return
@@ -65,10 +65,12 @@ export class Activation {
   }
 
   async disableForTime(days: number, hours: number, minutes: number) {
-    console.log(days, hours, minutes);
     const diffMs = (days * 24 * 60 * 60 + hours * 60 * 60 + minutes * 60) * 1000;
-    const ts = Date.now() + diffMs;
+    if (diffMs <= 0) {
+      return;
+    }
 
+    const ts = Date.now() + diffMs;
 
     await sendMessageToTab("disable-until", { untilMs: ts });
 
@@ -86,7 +88,7 @@ export class UrlList {
     const urlList = new UrlList(db);
     const state = await db.currentState();
 
-    urlList.btnAddCurrentPage.innerHTML = "Add current page (" + (await getCurrentBaseurl()) + ")";
+    urlList.btnAddCurrentPage.innerHTML = `&#65291; Add website '${await getCurrentBaseurl()}'`;
     urlList.updateList(state.urlList);
     return urlList;
   }
@@ -128,15 +130,20 @@ export class UrlList {
     this.urlContainer.innerHTML = '';
     urls.forEach(url => {
       const btnRemove = document.createElement('button');
-      btnRemove.innerHTML = "X";
+      btnRemove.innerHTML = "&#10005;";
       btnRemove.addEventListener('click', async () => {
         await this.removeUrl(url);
       });
 
+      const listItemText = document.createElement('span');
+      listItemText.innerHTML = url;
+      listItemText.classList.add('list-item-text');
+
+
       const el = document.createElement('div');
-      el.innerHTML = url;
-      el.classList.add('urlList-item');
+      el.classList.add('list-item');
       el.prepend(btnRemove);
+      el.appendChild(listItemText);
 
       this.urlContainer.appendChild(el);
     });
