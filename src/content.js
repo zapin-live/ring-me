@@ -31,13 +31,29 @@ const beep = ()=>{
 const startBeeper = async () => {
   beep()
   while (true){
-    await new Promise(r => setTimeout(r, 1000 + Math.random()*30000));
+    await new Promise(r => setTimeout(r, 1000 + Math.random()*60000));
     if (isFocused) {
-      beep()
+      storageGet('isActive', (isActive) => {
+        if (isActive){
+          beep()
+        }
+      });
     }
   }
+
 }
 
 const isUrlInHostList = (hostUrl, urlList) => urlList.some(givenHost=>hostUrl.endsWith(givenHost))
 
+function storageGet(key, callback) {
+  chrome.storage.local.get(key, function(result){
+    if(chrome.runtime.lastError) {
+      throw Error(chrome.runtime.lastError);
+    } else {
+      callback(result[key]);
+    }
+  });
+}
+
 void main()
+
