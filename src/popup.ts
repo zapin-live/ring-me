@@ -20,12 +20,15 @@ export class Activation {
   }
 
   async toggleActivation() {
-    const isActive = await this.db.get("isActive") && !await this.db.get("disabledUntil");
+    const isTemporarilyDisabled = await sendMessageToTab("check-beeper-temporarily-disabled", {});
+    const isActive = await this.db.get("isActive") && !await this.db.get("disabledUntil") && !isTemporarilyDisabled;
     const newIsActive = !isActive
 
     if (newIsActive) {
       await this.db.set("disabledUntil", null);
     }
+
+    console.log("newIsActive", newIsActive)
 
     await this.db.set("isActive", newIsActive)
 
@@ -34,17 +37,30 @@ export class Activation {
   }
 
   async updateUi() {
+    const textActicationStatus = document.getElementById('text-activationStatus')!;
+    const textActicationDescription = document.getElementById('text-statusDescription')!;
+    textActicationStatus.classList.remove("active", "inactive")
+
     const disabledUntil = await this.db.get("disabledUntil");
     if (disabledUntil && disabledUntil > Date.now()) {
-      document.getElementById('text-activationStatus')!.innerHTML = 'Disabled';
-      document.getElementById('text-statusDescription')!.innerHTML = `until ${new Date(disabledUntil).toLocaleString()}`;
+      textActicationStatus.innerHTML = 'Inactive';
+      textActicationStatus.classList.add('inactive');
+      textActicationDescription.innerHTML = `until ${new Date(disabledUntil).toLocaleString(getClientLocale())}`;
+      return
+    }
+
+    const isTemporarilyDisabled = await sendMessageToTab("check-beeper-temporarily-disabled", {});
+    if (isTemporarilyDisabled) {
+      textActicationStatus.innerHTML = 'Inactive';
+      textActicationStatus.classList.add('inactive');
+      textActicationDescription.innerHTML = `until refresh`;
       return
     }
 
     const isActive = await this.db.get("isActive");
-
-    document.getElementById('text-activationStatus')!.innerHTML = isActive ? 'Active' : 'Inactive';
-    document.getElementById('text-statusDescription')!.innerHTML = "";
+    textActicationStatus.innerHTML = isActive ? 'Active' : 'Inactive';
+    textActicationStatus.classList.add(isActive ? 'active' : 'inactive')
+    textActicationDescription.innerHTML = "";
   }
 
   async disableUntilNextPage() {
@@ -88,6 +104,12 @@ export class UrlList {
     const urlList = new UrlList(db);
     const state = await db.currentState();
 
+    if (!await urlList.isInUrlList(await getCurrentBaseurl())) {
+      console.log("not in list")
+      document.getElementById('container-activation-deactivation')!.classList.add('hidden');
+      document.getElementById('text-notification')!.classList.remove('hidden');
+    }
+
     urlList.btnAddCurrentPage.innerHTML = `&#65291; Add website '${await getCurrentBaseurl()}'`;
     urlList.updateList(state.urlList);
     return urlList;
@@ -114,6 +136,8 @@ export class UrlList {
     await this.db.set("urlList", urls);
     sendMessageToTab("url-added", { url });
 
+    document.getElementById('container-activation-deactivation')!.classList.remove('hidden');
+    document.getElementById('text-notification')!.classList.add('hidden');
     this.updateList(urls);
   }
 
@@ -124,6 +148,11 @@ export class UrlList {
     sendMessageToTab("url-removed", { url });
 
     this.updateList(newUrls);
+  }
+
+  isInUrlList = async (url: string) => {
+    const urls = await this.db.get("urlList") as string[];
+    return urls.includes(url);
   }
 
   updateList(urls: string[]) {
@@ -150,16 +179,16 @@ export class UrlList {
   }
 }
 
-
-
 document.addEventListener("DOMContentLoaded", async function() {
+  if (!await getCurrentBaseurl()) {
+    document.getElementById("text-notification")!.innerHTML = await getCurrentBaseurl();
+    return
+  }
+
   const db = await Database.init()
 
   const activation = await Activation.init(db);
   await UrlList.init(db);
-
-  console.log(await getCurrentBaseurl());
-
 
   document.getElementById('btn-disableUntilNextPage')!.addEventListener("click", async () => {
     await activation.disableUntilNextPage();
@@ -180,8 +209,9 @@ document.addEventListener("DOMContentLoaded", async function() {
 });
 
 
-const getCurrentUrl = async () => {
-  return new Promise<string | null>((resolve) => {
+
+const getCurrentBaseurl = async () => {
+  const url = await new Promise<string | null>((resolve) => {
     chrome.tabs.query({ active: true, currentWindow: true }, function(tabs) {
       const url = tabs[0].url;
       if (!url) {
@@ -190,12 +220,14 @@ const getCurrentUrl = async () => {
       resolve(url);
     });
   });
+
+  return url ? new URL(url).hostname : "";
 }
 
-const getCurrentBaseurl = async () => {
-  const url = await getCurrentUrl();
-  if (!url) {
-    return null;
+const getClientLocale = () => {
+  if (typeof Intl !== 'undefined') {
+    return Intl.NumberFormat().resolvedOptions().locale;
   }
-  return new URL(url).hostname;
+  return "en-GB";
 }
+

@@ -8,6 +8,10 @@ export type Message = {
     type: "beep",
   }
 
+  "check-beeper-temporarily-disabled": {
+    type: "check-beeper-temporarily-disabled"
+  }
+
   "disable-until-next-page": {
     type: "disable-until-next-page",
   }
@@ -30,19 +34,22 @@ export type Message = {
 
 export const sendMessageToTab = async <T extends keyof Message>(type: T, message: Omit<Message[T], "type">) => {
   console.debug("sendMessageToTab", type, message)
-  chrome.tabs.query({ active: true, currentWindow: true }, function(tabs) {
-    const tabId = tabs[0].id;
-    if (tabId) {
-      chrome.tabs.sendMessage(tabId, { type, ...message });
-    }
-  })
+  const tabs = await chrome.tabs.query({ active: true, currentWindow: true })
+  const tabId = tabs[0].id;
+  if (tabId) {
+    return chrome.tabs.sendMessage(tabId, { type, ...message })
+  }
 }
 
-export const receiveMessage = async <T extends keyof Message>(type: T, handler: (message: Message[T]) => void | Promise<void>) => {
-  chrome.runtime.onMessage.addListener(async (message) => {
+export const receiveMessage = async <T extends keyof Message>(type: T, handler: (message: Message[T]) => unknown | Promise<unknown>) => {
+  chrome.runtime.onMessage.addListener(async (message, _, sendResponse) => {
     if (message.type === type) {
       console.debug("receiveMessage", message)
-      handler(message)
+      const res = await handler(message)
+      if (res !== undefined) {
+        sendResponse(res)
+      }
+      return true
     }
   });
 }
