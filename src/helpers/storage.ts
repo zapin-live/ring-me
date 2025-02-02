@@ -4,6 +4,7 @@ export const storageSet = async (key: string, value: unknown) => {
       if (chrome.runtime.lastError) {
         reject(chrome.runtime.lastError.message);
       } else {
+        console.debug(`SET ${key} = ${value}`);
         resolve();
       }
     })
@@ -16,6 +17,7 @@ export const storageGet = async (key: string) => {
       if (chrome.runtime.lastError) {
         reject(chrome.runtime.lastError.message);
       } else {
+        console.debug(`GET ${key} = ${result[key]}`);
         resolve(result[key]);
       }
     });
@@ -25,8 +27,9 @@ export const storageGet = async (key: string) => {
 
 const DefaultValues = {
   isActive: true,
-  statusDescription: "", 
+  statusDescription: "",
   urlList: [] as string[],
+  disabledUntil: null as number | null,
 }
 
 export type StorageKey = keyof typeof DefaultValues;
@@ -53,13 +56,14 @@ export class Database {
     return storageGet(key) as Promise<StorageTypes[T]>;
   }
 
-  async set(key: StorageKey, value: unknown) {
+  async set<T extends StorageKey>(key: T, value: StorageTypes[T]) {
     return storageSet(key, value);
   }
 
   async currentState() {
     return {
       isActive: await this.get('isActive'),
+      disabledUntil: await this.get('disabledUntil'),
       statusDescription: await this.get('statusDescription'),
       urlList: await this.get('urlList'),
     }

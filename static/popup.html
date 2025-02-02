@@ -1,21 +1,30 @@
 <html>
+  <head>
+    <style>
+      body {
+        width: 300px;
+        padding: 10px;
+      }
+    </style>
+  </head>
   <body>
-    <button id="btn-activationStatus">On/Off</button>
-    <div id="text-activationStatus">-</div>
+    
+    <h1 id="text-activationStatus">-</h1>
     <div id="text-statusDescription">-</div>
+
+    <button id="btn-disableUntilNextPage">Disable until next page</button>
+    <button id="btn-disableUntilTomorrow">Disable until tomorrow</button>
 
     <h3>Disable for</h3>
     <form id="form-disableForX">
-      <input type="number" id="input-disableForDays" placeholder="days">
-      <input type="number" id="input-disableForHours" placeholder="hours">
-      <input type="number" id="input-disableForMinutes" placeholder="mins">
-      <button type="submit">Disable</button>
+      <input type="number" id="input-disableForDays" name="days" placeholder="days">
+      <input type="number" id="input-disableForHours" name="hours" placeholder="hours">
+      <input type="number" id="input-disableForMinutes" name="mins" placeholder="mins">
+      <button type="submit" id="btn-disableForX">Disable</button>
     </form>
 
-    <button id="btn-enable">Enable</button>
-    <button id="btn-disableUntilNextPage">Disable until next page</button>
-    <button id="btn-disableUntilTomorrow">Disable until tomorrow</button>
-    <button id="btn-disableForever">Until reactivation</button>
+
+    <button id="btn-activationStatus">On/Off</button>
 
     <h3>Websites</h3>
     <div id="container-urlList"> </div>
