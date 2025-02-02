@@ -1,7 +1,27 @@
 <html>
   <body>
-    <h2 id="activation-toggle">-</h2>
+    <button id="btn-activationStatus">On/Off</button>
+    <div id="text-activationStatus">-</div>
+    <div id="text-statusDescription">-</div>
+
+    <h3>Disable for</h3>
+    <form id="form-disableForX">
+      <input type="number" id="input-disableForDays" placeholder="days">
+      <input type="number" id="input-disableForHours" placeholder="hours">
+      <input type="number" id="input-disableForMinutes" placeholder="mins">
+      <button type="submit">Disable</button>
+    </form>
+
+    <button id="btn-enable">Enable</button>
+    <button id="btn-disableUntilNextPage">Disable until next page</button>
+    <button id="btn-disableUntilTomorrow">Disable until tomorrow</button>
+    <button id="btn-disableForever">Until reactivation</button>
+
+    <h3>Websites</h3>
+    <div id="container-urlList"> </div>
+    <button id="btn-addUrl">Add current page</button> 
 
     <script src="./popup.js"></script>
   </body>
 </html>
+
