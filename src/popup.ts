@@ -1,4 +1,4 @@
-import { sendMessageToTab } from './helpers/messenger';
+import { checkIsLoaded, sendMessageToTab } from './helpers/messenger';
 import { Database } from './helpers/storage';
 
 export class Activation {
@@ -179,6 +179,10 @@ export class UrlList {
 }
 
 document.addEventListener("DOMContentLoaded", async function() {
+  if (!await checkIsLoaded()) {
+    return
+  }
+
   const url = await getCurrentBaseurl();
   if (!url || url === "newtab") {
     document.getElementById("text-notification")!.innerHTML = await getCurrentBaseurl();

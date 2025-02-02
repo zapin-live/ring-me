@@ -12,6 +12,10 @@ export type Message = {
     type: "check-beeper-temporarily-disabled"
   }
 
+  "check-is-loaded": {
+    type: "check-is-loaded"
+  }
+
   "disable-until-next-page": {
     type: "disable-until-next-page",
   }
@@ -34,8 +38,7 @@ export type Message = {
 
 export const sendMessageToTab = async <T extends keyof Message>(type: T, message: Omit<Message[T], "type">) => {
   console.debug("sendMessageToTab", type, message)
-  const tabs = await chrome.tabs.query({ active: true, currentWindow: true })
-  const tabId = tabs[0].id;
+  const tabId = await getTabId()
   if (tabId) {
     return chrome.tabs.sendMessage(tabId, { type, ...message })
   }
@@ -52,4 +55,25 @@ export const receiveMessage = async <T extends keyof Message>(type: T, handler: 
       return true
     }
   });
+}
+
+
+export const checkIsLoaded = async () => {
+  const tabId = await getTabId()
+  if (tabId) {
+    return new Promise<boolean>((resolve, reject) => {
+      chrome.tabs.sendMessage(tabId, { type: "check-is-loaded" }, () => {
+        if (chrome.runtime.lastError) {
+          resolve(false)
+        } else {
+          resolve(true)
+        }
+      })
+    })
+  }
+}
+
+const getTabId = async () => {
+  const tabs = await chrome.tabs.query({ active: true, currentWindow: true })
+  return tabs[0].id;
 }
