@@ -16,7 +16,6 @@ export class Activation {
     document.getElementById('btn-activationStatus')!.addEventListener("click", async () => {
       this.toggleActivation();
     });
-
   }
 
   async toggleActivation() {
@@ -28,8 +27,6 @@ export class Activation {
       await this.db.set("disabledUntil", null);
     }
 
-    console.log("newIsActive", newIsActive)
-
     await this.db.set("isActive", newIsActive)
 
     await sendMessageToTab("activation-toggled", { isActive: newIsActive });
@@ -37,33 +34,34 @@ export class Activation {
   }
 
   async updateUi() {
-    const textActicationStatus = document.getElementById('text-activationStatus')!;
-    const textActicationDescription = document.getElementById('text-statusDescription')!;
-    textActicationStatus.classList.remove("active", "inactive")
-
-    const disabledUntil = await this.db.get("disabledUntil");
-    if (disabledUntil && disabledUntil > Date.now()) {
-      textActicationStatus.innerHTML = 'Inactive';
-      textActicationStatus.classList.add('inactive');
-      textActicationDescription.innerHTML = `until ${new Date(disabledUntil).toLocaleString(getClientLocale())}`;
+    const isTemporarilyDisabled = await sendMessageToTab("check-beeper-temporarily-disabled", {});
+    if (isTemporarilyDisabled) {
+      this.uiSetStatus(false, `until page reload`);
       return
     }
 
-    const isTemporarilyDisabled = await sendMessageToTab("check-beeper-temporarily-disabled", {});
-    if (isTemporarilyDisabled) {
-      textActicationStatus.innerHTML = 'Inactive';
-      textActicationStatus.classList.add('inactive');
-      textActicationDescription.innerHTML = `until refresh`;
+    const disabledUntil = await this.db.get("disabledUntil");
+    if (disabledUntil && disabledUntil > Date.now()) {
+      this.uiSetStatus(false, `until ${new Date(disabledUntil).toLocaleString(getClientLocale())}`);
       return
     }
 
     const isActive = await this.db.get("isActive");
-    textActicationStatus.innerHTML = isActive ? 'Active' : 'Inactive';
-    textActicationStatus.classList.add(isActive ? 'active' : 'inactive')
-    textActicationDescription.innerHTML = "";
+    this.uiSetStatus(isActive, "");
+  }
+
+  uiSetStatus(isActive: boolean, statusDescription: string) {
+    const containerActivation = document.getElementById('container-activation-deactivation')!;
+    containerActivation.classList.remove("active", "inactive")
+
+    containerActivation.classList.add(isActive ? 'active' : 'inactive')
+    document.getElementById('text-activationStatus')!.innerHTML = isActive ? 'Active' : 'Inactive';
+    document.getElementById('text-statusDescription')!.innerHTML = statusDescription;
   }
 
   async disableUntilNextPage() {
+    await this.db.set("disabledUntil", null);
+
     await sendMessageToTab("disable-until-next-page", {});
     await this.updateUi();
   }
@@ -80,8 +78,8 @@ export class Activation {
     await this.updateUi();
   }
 
-  async disableForTime(days: number, hours: number, minutes: number) {
-    const diffMs = (days * 24 * 60 * 60 + hours * 60 * 60 + minutes * 60) * 1000;
+  async disableForTime(hours: number, minutes: number) {
+    const diffMs = (hours * 60 * 60 + minutes * 60) * 1000;
     if (diffMs <= 0) {
       return;
     }
@@ -105,7 +103,7 @@ export class UrlList {
     const state = await db.currentState();
 
     if (!await urlList.isInUrlList(await getCurrentBaseurl())) {
-      console.log("not in list")
+      document.getElementById('container-controls')!.classList.add('hidden');
       document.getElementById('container-activation-deactivation')!.classList.add('hidden');
       document.getElementById('text-notification')!.classList.remove('hidden');
     }
@@ -160,6 +158,7 @@ export class UrlList {
     urls.forEach(url => {
       const btnRemove = document.createElement('button');
       btnRemove.innerHTML = "&#10005;";
+      btnRemove.classList.add('btn-remove');
       btnRemove.addEventListener('click', async () => {
         await this.removeUrl(url);
       });
@@ -180,7 +179,8 @@ export class UrlList {
 }
 
 document.addEventListener("DOMContentLoaded", async function() {
-  if (!await getCurrentBaseurl()) {
+  const url = await getCurrentBaseurl();
+  if (!url || url === "newtab") {
     document.getElementById("text-notification")!.innerHTML = await getCurrentBaseurl();
     return
   }
@@ -201,9 +201,8 @@ document.addEventListener("DOMContentLoaded", async function() {
   document.getElementById('form-disableForX')!.addEventListener("submit", async (e) => {
     e.preventDefault();
     activation.disableForTime(
-      parseInt((document.getElementById('input-disableForDays') as HTMLInputElement).value) || 0,
-      parseInt((document.getElementById('input-disableForHours') as HTMLInputElement).value) || 0,
-      parseInt((document.getElementById('input-disableForMinutes') as HTMLInputElement).value) || 0,
+      parseInt((document.getElementById('input-disableForHours') as HTMLInputElement)?.value) || 0,
+      parseInt((document.getElementById('input-disableForMinutes') as HTMLInputElement)?.value) || 0,
     );
   })
 });
