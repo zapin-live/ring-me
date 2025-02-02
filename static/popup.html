@@ -18,12 +18,35 @@
         margin-top: 10px;
       }
 
+      #website-header {
+        margin-top: 25px;
+        margin-bottom: 10px;
+      }
+
+      .active {
+        color: #22bb33;
+      }
+
+      .inactive {
+        color: #bb2124;
+      }
+
       .btn-icon {
         font-size: 18px;
       }
 
+      button.large {
+        height: 30px;
+      }
+
       .number-input {
         width: 58px;
+        border: 0;
+        border-bottom: 1px solid #bbb;
+      }
+
+      .hidden {
+        display: none;
       }
 
       .list-item {
@@ -44,8 +67,8 @@
         margin-top: 10px;
       }
 
-      .disable-whitespace {
-        white-space: nowrap;
+      .text-warning {
+        color: #f0ad4e;
       }
 
       button {
@@ -55,26 +78,32 @@
     </style>
   </head>
   <body>
-    <div>
-      <button id="btn-activationStatus" style="vertical-align: super">&#9211;</button>
-      <h1 id="text-activationStatus">-</h1>
-      <div id="text-statusDescription">-</div>
+    <h1 id="text-notification" class="text-warning hidden">Website not added</h1>
+    <div id="container-activation-deactivation">
+      <div>
+        <button id="btn-activationStatus" class="large" style="vertical-align: super">&#9211;</button>
+        <h1 id="text-activationStatus">-</h1>
+        <div id="text-statusDescription">-</div>
+      </div>
+
+      <div class="section">
+        <button id="btn-disableUntilNextPage" class="large">Disable until page reload</button>
+      </div>
+      <div class="section">
+        <button id="btn-disableUntilTomorrow" class="large">Disable until tomorrow</button>
+      </div>
+      <div class="section">
+        <form id="form-disableForX">
+          <button type="submit" id="btn-disableForX" class="large">Disable for</button>
+          <input class="number-input" type="number" id="input-disableForDays" name="days" placeholder="days">
+          <input class="number-input" type="number" id="input-disableForHours" name="hours" placeholder="hours">
+          <input class="number-input" type="number" id="input-disableForMinutes" name="mins" placeholder="mins">
+        </form>
+      </div>
     </div>
 
-    <div class="section">
-      <button id="btn-disableUntilNextPage">Disable until next page</button>
-    </div>
-    <div class="section">
-      <button id="btn-disableUntilTomorrow">Disable until tomorrow</button>
-    </div>
-    <div class="section">
-      <form id="form-disableForX" class="disable-whitespace">
-        <button type="submit" id="btn-disableForX">Disable for</button><input class="number-input" type="number" id="input-disableForDays" name="days" placeholder="days"><input class="number-input" type="number" id="input-disableForHours" name="hours" placeholder="hours"><input class="number-input" type="number" id="input-disableForMinutes" name="mins" placeholder="mins">
-      </form>
-    </div>
 
-
-    <h3>&#127760; Websites</h3>
+    <h3 id="website-header">&#127760; Websites</h3>
 
     <div id="container-urlList"> </div>
     <button id="btn-addUrl">Add current page</button> 

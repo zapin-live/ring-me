@@ -30,8 +30,13 @@ const main = async () => {
     }
   })
 
+  receiveMessage("check-beeper-temporarily-disabled", async () => {
+    return beeper.isTemporarilyDisabled
+  }) 
+
+
   receiveMessage("disable-until-next-page", async () => {
-    beeper.disable()
+    beeper.disableTemporarily()
   })
 
   receiveMessage("disable-until", async (message) => {
@@ -69,6 +74,7 @@ const main = async () => {
 class Beeper {
   isMuted: boolean = false
   isEnabled: boolean = false
+  isTemporarilyDisabled: boolean = false
   private disableTimeout: NodeJS.Timeout | null = null
 
   startLoop = async () => {
@@ -80,7 +86,7 @@ class Beeper {
   }
 
   beepIfActive = async () => {
-    if (this.isEnabled && !this.isMuted) {
+    if (this.isEnabled && !this.isMuted && !this.isTemporarilyDisabled) {
       try {
         Beeper.sound.play()
       } catch (e) {
@@ -91,6 +97,11 @@ class Beeper {
 
   disable = () => {
     this.isEnabled = false
+    this.isTemporarilyDisabled = false
+  }
+
+  disableTemporarily = () => {
+    this.isTemporarilyDisabled = true
   }
 
   enable = () => {
@@ -98,6 +109,7 @@ class Beeper {
       clearTimeout(this.disableTimeout)
     }
     this.isEnabled = true
+    this.isTemporarilyDisabled = false
   }
 
   disableUntil = async (timestamp: number) => {
