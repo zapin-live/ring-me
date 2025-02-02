@@ -1,0 +1,32 @@
+{
+  "name": "ring-me",
+  "version": "1.0.0",
+  "description": "A chrome extension which plays some sounds on configured websites",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "webpack --config webpack.prod.ts",
+    "start": "webpack --watch --config webpack.dev.ts"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/zapin-live/ring-me.git"
+  },
+  "author": "Zapin Live",
+  "license": "GPL-3.0",
+  "bugs": {
+    "url": "https://github.com/zapin-live/ring-me/issues"
+  },
+  "homepage": "https://github.com/zapin-live/ring-me#readme",
+  "devDependencies": {
+    "@tsconfig/recommended": "^1.0.8",
+    "@types/chrome": "^0.0.287",
+    "copy-webpack-plugin": "^12.0.2",
+    "ts-loader": "^9.5.1",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.7.2",
+    "webpack": "^5.96.1",
+    "webpack-cli": "^5.1.4",
+    "webpack-merge": "^6.0.1"
+  }
+}

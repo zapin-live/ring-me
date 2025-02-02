@@ -1,3 +1,5 @@
+import { storageGet } from "./helpers/storage";
+
 const main = async () => {
   const hostUrl = window.location.host
   if (isUrlInHostList(hostUrl, urlList)){ 
@@ -13,12 +15,10 @@ const urlList = [
 let isFocused = true;
 
 window.addEventListener('focus', function() {
-  console.log("focus")
   isFocused = true;
 })
 
 window.addEventListener('blur', function() {
-  console.log("blur")
   isFocused = false;
 })
 
@@ -29,7 +29,7 @@ const beep = ()=>{
 }
 
 const beepIfActive = () => {
-  storageGet('isActive', (isActive) => {
+  storageGet('isActive', (isActive: boolean) => {
     if (isActive){
       beep()
     }
@@ -46,17 +46,7 @@ const startBeeper = async () => {
   }
 }
 
-const isUrlInHostList = (hostUrl, urlList) => urlList.some(givenHost=>hostUrl.endsWith(givenHost))
-
-function storageGet(key, callback) {
-  chrome.storage.local.get(key, function(result){
-    if(chrome.runtime.lastError) {
-      throw Error(chrome.runtime.lastError);
-    } else {
-      callback(result[key]);
-    }
-  });
-}
+const isUrlInHostList = (hostUrl: string, urlList: string[]) => urlList.some(givenHost=>hostUrl.endsWith(givenHost))
 
 void main()
 
