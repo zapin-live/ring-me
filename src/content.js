@@ -28,19 +28,22 @@ const beep = ()=>{
     snd.play();
 }
 
+const beepIfActive = () => {
+  storageGet('isActive', (isActive) => {
+    if (isActive){
+      beep()
+    }
+  });
+}
+
 const startBeeper = async () => {
-  beep()
+  beepIfActive()
   while (true){
     await new Promise(r => setTimeout(r, 1000 + Math.random()*60000));
     if (isFocused) {
-      storageGet('isActive', (isActive) => {
-        if (isActive){
-          beep()
-        }
-      });
+      beepIfActive()
     }
   }
-
 }
 
 const isUrlInHostList = (hostUrl, urlList) => urlList.some(givenHost=>hostUrl.endsWith(givenHost))
