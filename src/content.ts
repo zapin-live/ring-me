@@ -20,6 +20,13 @@ const main = async () => {
   }
 
   // Listeners
+  receiveMessage("check-is-loaded", async () => {
+    return true
+  })
+
+  receiveMessage("check-beeper-temporarily-disabled", async () => {
+    return beeper.isTemporarilyDisabled
+  })
 
   receiveMessage("activation-toggled", async (message) => {
     if (message.isActive) {
@@ -27,10 +34,6 @@ const main = async () => {
     } else {
       beeper.disable()
     }
-  })
-
-  receiveMessage("check-beeper-temporarily-disabled", async () => {
-    return beeper.isTemporarilyDisabled
   })
 
   receiveMessage("disable-until-next-page", async () => {
