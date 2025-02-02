@@ -3,46 +3,97 @@
     <style>
       body {
         width: 300px;
-        padding: 10px;
+        padding: 0;
+        margin: 0;
+      }
+
+      h1 {
+        font-size: 2rem;
+      }
+
+      #text-notification {
+        padding: 18px 18px 0;
+        margin: 0;
       }
 
       #text-activationStatus {
         display: inline-block;
+        margin: 0 0 -3px 2px
       }
 
       #text-statusDescription {
-        display: inline-block;
+        margin-left: 38px;
+      }
+
+      #btn-activationStatus {
+        width: 30px;
+        height: 30px;
+        padding-top: 2px;
+        background: none;
+        border: 1px solid #444;
+        border-radius: 50%;
+        vertical-align: bottom;
+        opacity: 0.5;
       }
 
       #btn-addUrl {
         margin-top: 10px;
       }
 
-      #website-header {
-        margin-top: 25px;
-        margin-bottom: 10px;
+      #container-websites {
+        padding: 5px 18px 18px;
+      }
+      
+      #container-activation-deactivation {
+        padding: 18px 18px 20px;
       }
 
-      .active {
+      #container-activation-deactivation.active {
+        background-color: #e6ffe6;
         color: #22bb33;
+        box-shadow: 0 0 8px #a6bfa6;
       }
 
-      .inactive {
-        color: #bb2124;
+      #container-activation-deactivation.inactive {
+        background-color: #ffe6e6;
+        color: red;
+        box-shadow: 0 0 8px #bfa6a6;
+      }
+
+      #container-controls {
+        padding: 18px 0 0 18px;
+      }
+
+      #form-disableForX {
+        margin-bottom: 0;
+      }
+
+      #website-header {
+        margin-bottom: 10px;
       }
 
       .btn-icon {
         font-size: 18px;
       }
 
+      .btn-remove {
+        border: none;
+        background: none;
+      }
+
+      .btn-remove:hover {
+        color: red;
+      }
+
       button.large {
-        height: 30px;
+        min-height: 30px;
       }
 
       .number-input {
         width: 58px;
+        height: 28px;
         border: 0;
-        border-bottom: 1px solid #bbb;
+        border-bottom: 1px solid #888;
       }
 
       .hidden {
@@ -50,9 +101,9 @@
       }
 
       .list-item {
-        margin-top: 5px;
+        margin-top: 8px;
         padding-top: 5px;
-        border-top: 1px solid #ccc;
+        border-top: 1px solid #ddd;
       }
 
       .list-item:first-of-type {
@@ -61,6 +112,10 @@
 
       .list-item-text {
         margin-left: 5px;
+      }
+
+      .section:first-of-type {
+        margin-top: 0;
       }
 
       .section {
@@ -73,40 +128,59 @@
 
       button {
         cursor: pointer;
+        border: 1px solid #888;
+        border-radius: 7px;
+        background-color: #f6f6f6;
       }
 
+      button:hover {
+        background-color: #eaeaea;
+      }
+
+      #btn-disableForX {
+        border-radius: 7px 0 0 7px;
+      }
+
+      #btn-setDisableForX {
+        border-radius: 0 7px 7px 0;
+      }
     </style>
   </head>
   <body>
     <h1 id="text-notification" class="text-warning hidden">Website not added</h1>
     <div id="container-activation-deactivation">
       <div>
-        <button id="btn-activationStatus" class="large" style="vertical-align: super">&#9211;</button>
+        <button id="btn-activationStatus" class="large">&#9211;</button>
         <h1 id="text-activationStatus">-</h1>
         <div id="text-statusDescription">-</div>
       </div>
+    </div>
 
+    <div id="container-controls">
       <div class="section">
         <button id="btn-disableUntilNextPage" class="large">Disable until page reload</button>
       </div>
-      <div class="section">
-        <button id="btn-disableUntilTomorrow" class="large">Disable until tomorrow</button>
-      </div>
+
       <div class="section">
         <form id="form-disableForX">
           <button type="submit" id="btn-disableForX" class="large">Disable for</button>
-          <input class="number-input" type="number" id="input-disableForDays" name="days" placeholder="days">
           <input class="number-input" type="number" id="input-disableForHours" name="hours" placeholder="hours">
           <input class="number-input" type="number" id="input-disableForMinutes" name="mins" placeholder="mins">
+          <button type="submit" id="btn-setDisableForX" class="large">set</button>
         </form>
+      </div>
+
+      <div class="section">
+        <button id="btn-disableUntilTomorrow" class="large">Disable until tomorrow</button>
       </div>
     </div>
 
+    <div id="container-websites"> 
+      <h2 id="website-header">Websites</h2>
 
-    <h3 id="website-header">&#127760; Websites</h3>
-
-    <div id="container-urlList"> </div>
-    <button id="btn-addUrl">Add current page</button> 
+      <div id="container-urlList"> </div>
+      <button id="btn-addUrl" class="large">Add current page</button> 
+    </div>
 
     <script src="./popup.js"></script>
   </body>
