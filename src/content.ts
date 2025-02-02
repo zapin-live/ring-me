@@ -11,7 +11,7 @@ const main = async () => {
   const maybeEnableBeeper = async () => {
     if (state.isActive) {
       if (state.urlList.includes(window.location.hostname)) {
-        if (state.disabledUntil) {
+        if (state.disabledUntil && state.disabledUntil > (new Date()).getTime()) {
           beeper.disableUntil(state.disabledUntil)
         } else {
           beeper.enable()
