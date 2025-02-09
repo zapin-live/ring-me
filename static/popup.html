@@ -3,12 +3,19 @@
     <style>
       body {
         width: 300px;
-        padding: 0;
+        padding: 0 0 18px 0;
         margin: 0;
       }
 
       h1 {
         font-size: 2rem;
+      }
+
+      #header-settings {
+        display: inline;
+        vertical-align: middle;
+        user-select: none;
+        cursor: pointer;
       }
 
       #text-notification {
@@ -40,9 +47,6 @@
         margin-top: 10px;
       }
 
-      #container-websites {
-        padding: 5px 18px 18px;
-      }
       
       #container-activation-deactivation {
         padding: 18px 18px 20px;
@@ -68,10 +72,6 @@
         margin-bottom: 0;
       }
 
-      #website-header {
-        margin-bottom: 10px;
-      }
-
       .btn-icon {
         font-size: 18px;
       }
@@ -87,6 +87,14 @@
 
       button.large {
         min-height: 30px;
+      }
+
+      .section-container {
+        padding: 5px 18px 0 18px;
+      }
+
+      .section-header {
+        margin-bottom: 10px;
       }
 
       .number-input {
@@ -175,12 +183,23 @@
       </div>
     </div>
 
-    <div id="container-websites"> 
-      <h2 id="website-header">Websites</h2>
+    <div class="section-container"> 
+      <h2 class="section-header">Websites</h2>
 
       <div id="container-urlList"> </div>
       <button id="btn-addUrl" class="large">Add current page</button> 
     </div>
+
+    <details class="section-container" style="margin-top: 15px">
+      <summary>
+        <h2 id="header-settings">Sound setting</h2>
+      </summary>
+      <div style="margin-top: 10px">
+        <label for="input-volume">Quiet</label>
+        <input type="range" id="input-volume" min="3" max="50" step="1" value="20" style="vertical-align: middle">
+        <label for="input-volume">Loud</label>
+      </div>
+    </details>
 
     <script src="./popup.js"></script>
   </body>

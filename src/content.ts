@@ -5,19 +5,7 @@ import { Database } from "./helpers/storage";
 const main = async () => {
   const db = await Database.init()
   const state = await db.currentState()
-  const beeper = new Beeper()
-
-  const maybeEnableBeeper = async () => {
-    if (state.isActive) {
-      if (state.urlList.includes(window.location.hostname)) {
-        if (state.disabledUntil && state.disabledUntil > (new Date()).getTime()) {
-          beeper.disableUntil(state.disabledUntil)
-        } else {
-          beeper.enable()
-        }
-      }
-    }
-  }
+  const beeper = new Beeper(state.volume)
 
   // Listeners
   receiveMessage("check-is-loaded", async () => {
@@ -56,6 +44,10 @@ const main = async () => {
     }
   })
 
+  receiveMessage("volume-changed", async (message) => {
+    beeper.setVolume(message.volume)
+  })
+
   window.addEventListener('focus', function(this: Beeper) {
     beeper.unMute()
     beeper.beepIfActive(1000)
@@ -65,8 +57,21 @@ const main = async () => {
     beeper.mute()
   })
 
-  // Loop
 
+
+  const maybeEnableBeeper = async () => {
+    if (state.isActive) {
+      if (state.urlList.includes(window.location.hostname)) {
+        if (state.disabledUntil && state.disabledUntil > (new Date()).getTime()) {
+          beeper.disableUntil(state.disabledUntil)
+        } else {
+          beeper.enable()
+        }
+      }
+    }
+  }
+
+  // Loop
   await maybeEnableBeeper()
   await beeper.startLoop()
 }
@@ -76,7 +81,12 @@ class Beeper {
   isMuted: boolean = false
   isEnabled: boolean = false
   isTemporarilyDisabled: boolean = false
+  volume: number
   private disableTimeout: NodeJS.Timeout | null = null
+
+  constructor(volume: number) {
+    this.volume = volume
+  }
 
   startLoop = async () => {
     this.beepIfActive()
@@ -103,9 +113,10 @@ class Beeper {
     const audio = new (window.AudioContext || (window as any).webkitAudioContext)()
 
     const volume = audio.createGain()
-    volume.gain.value = 0.1
+    console.log(this.volume)
+    volume.gain.value = this.volume / 100
 
-    const osc = audio.createOscillator() 
+    const osc = audio.createOscillator()
     osc.type = 'square';
     osc.frequency.value = frequency;
 
@@ -159,6 +170,10 @@ class Beeper {
 
   unMute = () => {
     this.isMuted = false
+  }
+
+  setVolume = (volume: number) => {
+    this.volume = volume
   }
 
   waitRandomInterval = async () => {

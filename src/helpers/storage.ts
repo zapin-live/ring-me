@@ -30,6 +30,7 @@ const DefaultValues = {
   statusDescription: "",
   urlList: [] as string[],
   disabledUntil: null as number | null,
+  volume: 20,
 }
 
 export type StorageKey = keyof typeof DefaultValues;
@@ -66,6 +67,7 @@ export class Database {
       disabledUntil: await this.get('disabledUntil'),
       statusDescription: await this.get('statusDescription'),
       urlList: await this.get('urlList'),
+      volume: await this.get('volume'),
     }
   }
 }
