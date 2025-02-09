@@ -1,11 +1,67 @@
 import { checkIsLoaded, sendMessageToTab } from './helpers/messenger';
 import { Database } from './helpers/storage';
 
-export class Activation {
+
+document.addEventListener("DOMContentLoaded", async function() {
+  if (!await checkIsLoaded()) {
+    return
+  }
+
+  const url = await getCurrentBaseurl();
+  if (!url || url === "newtab") {
+    document.getElementById("text-notification")!.innerHTML = await getCurrentBaseurl();
+    return
+  }
+
+  const db = await Database.init()
+
+  await Activation.init(db);
+  await UrlList.init(db);
+  await Settings.init(db);
+});
+
+class Settings {
+  db: Database;
+  static async init(db: Database) {
+    const settings = new Settings(db);
+    const state = await db.currentState();
+    const rangeInput = document.getElementById('input-volume') as HTMLInputElement;
+    rangeInput.value = state.volume.toString();
+
+    rangeInput.addEventListener("change", async (e) => {
+      const volume = Number((e.target as HTMLInputElement).value)
+      await db.set("volume", volume);
+      await sendMessageToTab("volume-changed", {volume: volume});
+    })
+    return settings;
+  }
+  constructor(db: Database) {
+    this.db = db;
+  }
+}
+
+class Activation {
   db: Database;
 
   static async init(db: Database) {
     const activation = new Activation(db)
+
+    document.getElementById('btn-disableUntilNextPage')!.addEventListener("click", async () => {
+      await activation.disableUntilNextPage();
+    })
+
+    document.getElementById('btn-disableUntilTomorrow')!.addEventListener("click", async () => {
+      await activation.disableUntilTomorrow();
+    })
+
+    document.getElementById('form-disableForX')!.addEventListener("submit", async (e) => {
+      e.preventDefault();
+
+      activation.disableForTime(
+        parseInt((document.getElementById('input-disableForHours') as HTMLInputElement)?.value) || 0,
+        parseInt((document.getElementById('input-disableForMinutes') as HTMLInputElement)?.value) || 0,
+      );
+    })
     await activation.updateUi();
     return activation;
   }
@@ -93,7 +149,8 @@ export class Activation {
   }
 }
 
-export class UrlList {
+
+class UrlList {
   db: Database;
   btnAddCurrentPage = document.getElementById('btn-addUrl')!
   urlContainer = document.getElementById('container-urlList')!;
@@ -177,40 +234,6 @@ export class UrlList {
     });
   }
 }
-
-document.addEventListener("DOMContentLoaded", async function() {
-  if (!await checkIsLoaded()) {
-    return
-  }
-
-  const url = await getCurrentBaseurl();
-  if (!url || url === "newtab") {
-    document.getElementById("text-notification")!.innerHTML = await getCurrentBaseurl();
-    return
-  }
-
-  const db = await Database.init()
-
-  const activation = await Activation.init(db);
-  await UrlList.init(db);
-
-  document.getElementById('btn-disableUntilNextPage')!.addEventListener("click", async () => {
-    await activation.disableUntilNextPage();
-  })
-
-  document.getElementById('btn-disableUntilTomorrow')!.addEventListener("click", async () => {
-    await activation.disableUntilTomorrow();
-  })
-
-  document.getElementById('form-disableForX')!.addEventListener("submit", async (e) => {
-    e.preventDefault();
-    activation.disableForTime(
-      parseInt((document.getElementById('input-disableForHours') as HTMLInputElement)?.value) || 0,
-      parseInt((document.getElementById('input-disableForMinutes') as HTMLInputElement)?.value) || 0,
-    );
-  })
-});
-
 
 
 const getCurrentBaseurl = async () => {

@@ -34,6 +34,11 @@ export type Message = {
     type: "url-removed",
     url: string
   }
+
+  "volume-changed": {
+    type: "volume-changed",
+    volume: number // 1-100
+  }
 }
 
 export const sendMessageToTab = async <T extends keyof Message>(type: T, message: Omit<Message[T], "type">) => {
