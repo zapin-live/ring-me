@@ -125,24 +125,12 @@ class Beeper {
   };
 
   beep = async (frequency: number, duration: number) => {
-    await this.createAudioOffscreen();
+    await createAudioOffscreen();
     chrome.runtime.sendMessage({
       type: "playSound",
       volume: this.volume,
       frequency,
       duration,
-    });
-  };
-
-  createAudioOffscreen = async () => {
-    if (await chrome.offscreen.hasDocument()) {
-      return;
-    }
-
-    await chrome.offscreen.createDocument({
-      url: "offscreen.html",
-      reasons: [chrome.offscreen.Reason.AUDIO_PLAYBACK],
-      justification: "Playing audio",
     });
   };
 
@@ -205,6 +193,32 @@ class Beeper {
   private MIN_INTERVAL = 5000;
   private MAX_INTERVAL = 30000;
 }
+
+let creationTask: Promise<void> | null;
+const createAudioOffscreen = async () => {
+  const path = "offscreen.html";
+  const offscreenUrl = chrome.runtime.getURL(path);
+  const existingContexts = await chrome.runtime.getContexts({
+    contextTypes: [chrome.runtime.ContextType.OFFSCREEN_DOCUMENT],
+    documentUrls: [offscreenUrl],
+  });
+
+  if (existingContexts.length > 0) {
+    return;
+  }
+
+  if (creationTask) {
+    await creationTask;
+  } else {
+    creationTask = chrome.offscreen.createDocument({
+      url: path,
+      reasons: [chrome.offscreen.Reason.AUDIO_PLAYBACK],
+      justification: "Playing audio",
+    });
+    await creationTask;
+    creationTask = null;
+  }
+};
 
 const getCurrentUrl = async () => {
   const [tab] = await chrome.tabs.query({
