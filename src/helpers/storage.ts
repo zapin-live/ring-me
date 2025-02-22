@@ -17,7 +17,7 @@ export const storageGet = async (key: string) => {
       if (chrome.runtime.lastError) {
         reject(chrome.runtime.lastError.message);
       } else {
-        console.debug(`GET ${key} = ${result[key]}`);
+        console.debug(`-GET ${key} = ${result[key]}`);
         resolve(result[key]);
       }
     });
@@ -29,7 +29,7 @@ const DefaultValues = {
   isActive: true,
   statusDescription: "",
   urlList: [] as string[],
-  disabledUntil: null as number | null,
+  disabledUntil: null as number | null | "next-visit",
   volume: 20,
 }
 

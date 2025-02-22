@@ -1,18 +1,9 @@
-import { checkIsLoaded, sendMessageToTab } from './helpers/messenger';
+import { sendMessage } from './helpers/messenger';
 import { Database } from './helpers/storage';
 
 
+
 document.addEventListener("DOMContentLoaded", async function() {
-  if (!await checkIsLoaded()) {
-    return
-  }
-
-  const url = await getCurrentBaseurl();
-  if (!url || url === "newtab") {
-    document.getElementById("text-notification")!.innerHTML = await getCurrentBaseurl();
-    return
-  }
-
   const db = await Database.init()
 
   await Activation.init(db);
@@ -22,103 +13,69 @@ document.addEventListener("DOMContentLoaded", async function() {
 
 class Settings {
   db: Database;
+  rangeInput = document.getElementById('input-volume') as HTMLInputElement;
   static async init(db: Database) {
-    const settings = new Settings(db);
-    const state = await db.currentState();
-    const rangeInput = document.getElementById('input-volume') as HTMLInputElement;
-    rangeInput.value = state.volume.toString();
-
-    rangeInput.addEventListener("change", async (e) => {
-      const volume = Number((e.target as HTMLInputElement).value)
-      await db.set("volume", volume);
-      await sendMessageToTab("volume-changed", {volume: volume});
-    })
-    return settings;
+    const instance = new Settings(db);
+    await instance.updateUi();
+    return instance;
   }
+
   constructor(db: Database) {
     this.db = db;
+
+    this.rangeInput.addEventListener("change", async (e) => {
+      await sendMessage("volume-changed", { volume: Number((e.target as HTMLInputElement).value) });
+    })
+  }
+
+  async updateUi() {
+    const volume = await this.db.get("volume");
+    this.rangeInput.value = volume.toString();
   }
 }
+
 
 class Activation {
   db: Database;
 
   static async init(db: Database) {
-    const activation = new Activation(db)
-
-    document.getElementById('btn-disableUntilNextPage')!.addEventListener("click", async () => {
-      await activation.disableUntilNextPage();
-    })
-
-    document.getElementById('btn-disableUntilTomorrow')!.addEventListener("click", async () => {
-      await activation.disableUntilTomorrow();
-    })
-
-    document.getElementById('form-disableForX')!.addEventListener("submit", async (e) => {
-      e.preventDefault();
-
-      activation.disableForTime(
-        parseInt((document.getElementById('input-disableForHours') as HTMLInputElement)?.value) || 0,
-        parseInt((document.getElementById('input-disableForMinutes') as HTMLInputElement)?.value) || 0,
-      );
-    })
-    await activation.updateUi();
-    return activation;
+    const instance = new Activation(db)
+    await instance.updateUi();
+    return instance;
   }
 
   constructor(db: Database) {
     this.db = db;
 
+    document.getElementById('btn-disableUntilNextPage')!.addEventListener("click", async () => {
+      await this.disableUntilNextPage();
+    })
+
+    document.getElementById('btn-disableUntilTomorrow')!.addEventListener("click", async () => {
+      await this.disableUntilTomorrow();
+    })
+
+    document.getElementById('form-disableForX')!.addEventListener("submit", async (e) => {
+      e.preventDefault();
+
+      this.disableForTime(
+        parseInt((document.getElementById('input-disableForHours') as HTMLInputElement)?.value) || 0,
+        parseInt((document.getElementById('input-disableForMinutes') as HTMLInputElement)?.value) || 0,
+      );
+    })
+
     document.getElementById('btn-activationStatus')!.addEventListener("click", async () => {
-      this.toggleActivation();
+      await this.toggleActivation();
     });
   }
 
   async toggleActivation() {
-    const isTemporarilyDisabled = await sendMessageToTab("check-beeper-temporarily-disabled", {});
-    const isActive = await this.db.get("isActive") && !await this.db.get("disabledUntil") && !isTemporarilyDisabled;
-    const newIsActive = !isActive
-
-    if (newIsActive) {
-      await this.db.set("disabledUntil", null);
-    }
-
-    await this.db.set("isActive", newIsActive)
-
-    await sendMessageToTab("activation-toggled", { isActive: newIsActive });
+    await sendMessage("activation-toggled", {});
     await this.updateUi();
   }
 
-  async updateUi() {
-    const isTemporarilyDisabled = await sendMessageToTab("check-beeper-temporarily-disabled", {});
-    if (isTemporarilyDisabled) {
-      this.uiSetStatus(false, `until page reload`);
-      return
-    }
-
-    const disabledUntil = await this.db.get("disabledUntil");
-    if (disabledUntil && disabledUntil > Date.now()) {
-      this.uiSetStatus(false, `until ${new Date(disabledUntil).toLocaleString(getClientLocale())}`);
-      return
-    }
-
-    const isActive = await this.db.get("isActive");
-    this.uiSetStatus(isActive, "");
-  }
-
-  uiSetStatus(isActive: boolean, statusDescription: string) {
-    const containerActivation = document.getElementById('container-activation-deactivation')!;
-    containerActivation.classList.remove("active", "inactive")
-
-    containerActivation.classList.add(isActive ? 'active' : 'inactive')
-    document.getElementById('text-activationStatus')!.innerHTML = isActive ? 'Active' : 'Inactive';
-    document.getElementById('text-statusDescription')!.innerHTML = statusDescription;
-  }
-
   async disableUntilNextPage() {
-    await this.db.set("disabledUntil", null);
-
-    await sendMessageToTab("disable-until-next-page", {});
+    await sendMessage("disable-until-next-visit", {});
     await this.updateUi();
   }
 
@@ -128,9 +85,8 @@ class Activation {
     dateTomorrowMorning.setHours(8, 0, 0, 0);
     const ts = dateTomorrowMorning.getTime();
 
-    await sendMessageToTab("disable-until", { untilMs: ts });
+    await sendMessage("disable-until", { untilMs: ts });
 
-    await this.db.set("disabledUntil", ts);
     await this.updateUi();
   }
 
@@ -139,13 +95,58 @@ class Activation {
     if (diffMs <= 0) {
       return;
     }
-
     const ts = Date.now() + diffMs;
 
-    await sendMessageToTab("disable-until", { untilMs: ts });
+    await sendMessage("disable-until", { untilMs: ts });
 
-    await this.db.set("disabledUntil", ts);
     await this.updateUi();
+  }
+
+  async updateUi() {
+    const url = await getCurrentBaseurl();
+    const urlList = await this.db.get("urlList") as string[];
+    const disabledUntil = await this.db.get("disabledUntil");
+
+    if (!(url && url.includes("."))) {
+      this.uiSetStatus("websiteInvalid", "");
+    } else if (!urlList.includes(url)) {
+      this.uiSetStatus("websiteNotAdded", "");
+    } else if (disabledUntil === "next-visit") {
+      this.uiSetStatus("inactive", "until next visit");
+    } else if (disabledUntil && disabledUntil > Date.now()) {
+      this.uiSetStatus("inactive", `until ${new Date(disabledUntil).toLocaleString(getClientLocale())}`);
+    } else {
+      this.uiSetStatus("active", "");
+    }
+  }
+
+  private uiSetStatus(
+    status: "active" | "inactive" | "websiteNotAdded" | "websiteInvalid",
+    statusDescription: string
+  ) {
+    const containerActivation = document.getElementById('container-activation-deactivation')!;
+    const elementStatusText = document.getElementById('text-activationStatus')!
+
+    containerActivation.classList.remove("active", "inactive")
+    switch (status) {
+      case "active":
+        elementStatusText.innerHTML = "Active";
+        containerActivation.classList.add('active')
+        break;
+      case "inactive":
+        elementStatusText.innerHTML = "Inactive";
+        containerActivation.classList.add('inactive')
+        break;
+      case "websiteNotAdded":
+        elementStatusText.innerHTML = "Website not added";
+        containerActivation.classList.add('standby')
+        break;
+      case "websiteInvalid":
+        elementStatusText.innerHTML = "Standby";
+        containerActivation.classList.add('standby')
+    }
+
+    document.getElementById('text-statusDescription')!.innerHTML = statusDescription;
   }
 }
 
@@ -157,16 +158,7 @@ class UrlList {
 
   static async init(db: Database) {
     const urlList = new UrlList(db);
-    const state = await db.currentState();
-
-    if (!await urlList.isInUrlList(await getCurrentBaseurl())) {
-      document.getElementById('container-controls')!.classList.add('hidden');
-      document.getElementById('container-activation-deactivation')!.classList.add('hidden');
-      document.getElementById('text-notification')!.classList.remove('hidden');
-    }
-
-    urlList.btnAddCurrentPage.innerHTML = `&#65291; Add website '${await getCurrentBaseurl()}'`;
-    urlList.updateList(state.urlList);
+    await urlList.updateUi();
     return urlList;
   }
 
@@ -181,36 +173,35 @@ class UrlList {
     this.db = db;
   }
 
-
   addUrl = async (url: string) => {
-    const urls = await this.db.get("urlList") as string[];
-    if (urls.includes(url)) {
-      return;
-    }
-    urls.push(url);
-    await this.db.set("urlList", urls);
-    sendMessageToTab("url-added", { url });
-
-    document.getElementById('container-activation-deactivation')!.classList.remove('hidden');
-    document.getElementById('text-notification')!.classList.add('hidden');
-    this.updateList(urls);
+    await sendMessage("url-added", { url });
+    await this.updateUi();
   }
 
   removeUrl = async (url: string) => {
-    const urls = await this.db.get("urlList") as string[];
-    const newUrls = urls.filter(u => u !== url);
-    await this.db.set("urlList", newUrls);
-    sendMessageToTab("url-removed", { url });
-
-    this.updateList(newUrls);
+    await sendMessage("url-removed", { url });
+    await this.updateUi();
   }
 
-  isInUrlList = async (url: string) => {
+
+  private isInUrlList = async (url: string) => {
     const urls = await this.db.get("urlList") as string[];
     return urls.includes(url);
   }
 
-  updateList(urls: string[]) {
+  async updateUi() {
+    const urlIsInList = await this.isInUrlList(await getCurrentBaseurl());
+    if (urlIsInList) {
+      hideElement(this.btnAddCurrentPage);
+    } else {
+      unhideElement(this.btnAddCurrentPage);
+    }
+
+    this.btnAddCurrentPage.innerHTML = `&#65291; Add website '${await getCurrentBaseurl()}'`;
+
+
+    const urls = await this.db.get("urlList");
+
     this.urlContainer.innerHTML = '';
     urls.forEach(url => {
       const btnRemove = document.createElement('button');
@@ -235,6 +226,14 @@ class UrlList {
   }
 }
 
+
+const hideElement = (el: HTMLElement) => {
+  el.classList.add('hidden');
+}
+
+const unhideElement = (el: HTMLElement) => {
+  el.classList.remove('hidden');
+}
 
 const getCurrentBaseurl = async () => {
   const url = await new Promise<string | null>((resolve) => {

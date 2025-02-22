@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Ring Me",
-  "description": "Ring a bell when visiting certain websites",
+  "description": "Play a loud sound when visiting configured websites",
   "version": "1.0",
   "action": {
     "default_icons": {
@@ -21,13 +21,7 @@
   "background": {
     "service_worker": "./background.js"
   },
-  "content_scripts": [
-    {
-      "js": ["./content.js"],
-      "matches": ["<all_urls>"]
-    }
-  ],
-  "permissions": ["activeTab", "storage"],
+  "permissions": ["tabs", "storage", "offscreen"],
   "commands": {
     "_execute_action": {
       "suggested_key": {

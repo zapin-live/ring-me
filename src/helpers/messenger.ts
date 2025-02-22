@@ -1,7 +1,6 @@
 export type Message = {
   "activation-toggled": {
     type: "activation-toggled"
-    isActive: boolean
   }
 
   "beep": {
@@ -12,12 +11,8 @@ export type Message = {
     type: "check-beeper-temporarily-disabled"
   }
 
-  "check-is-loaded": {
-    type: "check-is-loaded"
-  }
-
-  "disable-until-next-page": {
-    type: "disable-until-next-page",
+  "disable-until-next-visit": {
+    type: "disable-until-next-visit",
   }
 
   "disable-until": {
@@ -41,44 +36,19 @@ export type Message = {
   }
 }
 
-export const sendMessageToTab = async <T extends keyof Message>(type: T, message: Omit<Message[T], "type">) => {
-  console.debug("sendMessageToTab", type, message)
-  const tabId = await getTabId()
-  if (tabId) {
-    return chrome.tabs.sendMessage(tabId, { type, ...message })
-  }
+export const sendMessage = async <T extends keyof Message>(type: T, message: Omit<Message[T], "type">) => {
+  console.debug("sendMessage", type, message)
+  return await chrome.runtime.sendMessage({ type, ...message })
 }
 
-export const receiveMessage = async <T extends keyof Message>(type: T, handler: (message: Message[T]) => unknown | Promise<unknown>) => {
-  chrome.runtime.onMessage.addListener(async (message, _, sendResponse) => {
+export const receiveMessage = async <T extends keyof Message>(type: T, handler: (message: Message[T]) => Promise<unknown>) => {
+  chrome.runtime.onMessage.addListener((message, _, sendResponse) => {
     if (message.type === type) {
       console.debug("receiveMessage", message)
-      const res = await handler(message)
-      if (res !== undefined) {
+      handler(message).then((res) => {
         sendResponse(res)
-      }
+      })
       return true
     }
   });
-}
-
-
-export const checkIsLoaded = async () => {
-  const tabId = await getTabId()
-  if (tabId) {
-    return new Promise<boolean>((resolve, reject) => {
-      chrome.tabs.sendMessage(tabId, { type: "check-is-loaded" }, () => {
-        if (chrome.runtime.lastError) {
-          resolve(false)
-        } else {
-          resolve(true)
-        }
-      })
-    })
-  }
-}
-
-const getTabId = async () => {
-  const tabs = await chrome.tabs.query({ active: true, currentWindow: true })
-  return tabs[0].id;
 }

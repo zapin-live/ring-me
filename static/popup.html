@@ -25,7 +25,8 @@
 
       #text-activationStatus {
         display: inline-block;
-        margin: 0 0 -3px 2px
+        margin: 0 0 -3px 2px;
+        width: 75vw;
       }
 
       #text-statusDescription {
@@ -36,11 +37,13 @@
         width: 30px;
         height: 30px;
         padding-top: 2px;
+        margin-top: 5px;
         background: none;
         border: 1px solid #444;
         border-radius: 50%;
-        vertical-align: bottom;
+        vertical-align: top;
         opacity: 0.5;
+        cursor: pointer;
       }
 
       #btn-addUrl {
@@ -62,6 +65,12 @@
         background-color: #ffe6e6;
         color: red;
         box-shadow: 0 0 8px #bfa6a6;
+      }
+
+      #container-activation-deactivation.standby {
+        background-color: #ffe9c1;
+        color: orange;
+        box-shadow: 0 0 8px #bfb5a6;
       }
 
       #container-controls {
@@ -155,11 +164,10 @@
     </style>
   </head>
   <body>
-    <h1 id="text-notification" class="text-warning hidden">Website not added</h1>
     <div id="container-activation-deactivation">
       <div>
         <button id="btn-activationStatus" class="large">&#9211;</button>
-        <h1 id="text-activationStatus">Not loaded yet</h1>
+        <h1 id="text-activationStatus">Loading...</h1>
         <div id="text-statusDescription"></div>
       </div>
     </div>
