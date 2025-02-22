@@ -148,6 +148,7 @@ class Beeper {
       clearTimeout(this.disableTimeout);
     }
     this.isEnabled = true;
+    this.isMuted = false;
     this.isTemporarilyDisabled = false;
   };
 
