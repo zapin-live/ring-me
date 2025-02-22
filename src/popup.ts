@@ -119,6 +119,7 @@ const Status = {
     const url = await getCurrentBaseurl();
     const urlList = (await this.db.get("urlList")) as string[];
     const disabledUntil = await this.db.get("disabledUntil");
+    const isActive = await this.db.get("isActive");
 
     if (!(url && url.includes("."))) {
       this.uiSetStatus("websiteInvalid", "");
@@ -131,6 +132,8 @@ const Status = {
         "inactive",
         `until ${new Date(disabledUntil).toLocaleString(getClientLocale())}`,
       );
+    } else if (!isActive) {
+      this.uiSetStatus("inactive", "");
     } else {
       this.uiSetStatus("active", "");
     }
