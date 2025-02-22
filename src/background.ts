@@ -67,25 +67,45 @@ const main = async () => {
     beeper.setVolume(message.volume);
   });
 
-  chrome.tabs.onActivated.addListener(async () => {
+  let lastHostname = "";
+  const onFocus = async (hostname: string) => {
     const urlList = await db.get("urlList");
 
-    if (urlList.includes(await getCurrentUrl())) {
+    if (urlList.includes(hostname)) {
+      if (hostname === lastHostname) {
+        return;
+      }
+
       if ((await db.get("disabledUntil")) == "next-visit") {
         await db.set("disabledUntil", null);
         beeper.isTemporarilyDisabled = false;
       }
 
       beeper.unMute();
-      beeper.beepIfActive({ delay: 1000 });
+      beeper.beepIfActive({ delay: 900 });
     } else {
       beeper.mute();
     }
+
+    lastHostname = hostname;
+  };
+
+  chrome.tabs.onUpdated.addListener(async (_, changeInfo, __) => {
+    if (changeInfo?.url) {
+      const hostname = new URL(changeInfo.url).hostname;
+      await onFocus(hostname);
+    }
+  });
+
+  chrome.tabs.onActivated.addListener(async () => {
+    await onFocus(await getCurrentUrl());
   });
 
   chrome.windows.onFocusChanged.addListener(async (e) => {
     if (e === chrome.windows.WINDOW_ID_NONE) {
       beeper.mute();
+    } else {
+      await onFocus(await getCurrentUrl());
     }
   });
 
@@ -226,7 +246,7 @@ const getCurrentUrl = async () => {
     active: true,
     lastFocusedWindow: true,
   });
-  return tab.url ? new URL(tab.url).hostname : "";
+  return tab?.url ? new URL(tab.url).hostname : "";
 };
 
 void main();
