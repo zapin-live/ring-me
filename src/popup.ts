@@ -4,21 +4,21 @@ import { Database } from "./helpers/storage";
 document.addEventListener("DOMContentLoaded", async function () {
   const db = await Database.init();
 
-  await Activation.init(db);
-  await UrlList.init(db);
-  await Settings.init(db);
+  Status.init(db);
+  Status.updateUi();
+
+  UrlList.init(db);
+  UrlList.updateUi();
+
+  Settings.init(db);
+  Settings.updateUi();
 });
 
-class Settings {
-  db: Database;
-  rangeInput = document.getElementById("input-volume") as HTMLInputElement;
-  static async init(db: Database) {
-    const instance = new Settings(db);
-    await instance.updateUi();
-    return instance;
-  }
+const Settings = {
+  db: null as unknown as Database,
+  rangeInput: document.getElementById("input-volume") as HTMLInputElement,
 
-  constructor(db: Database) {
+  init(db: Database) {
     this.db = db;
 
     this.rangeInput.addEventListener("change", async (e) => {
@@ -26,24 +26,18 @@ class Settings {
         volume: Number((e.target as HTMLInputElement).value),
       });
     });
-  }
+  },
 
   async updateUi() {
     const volume = await this.db.get("volume");
     this.rangeInput.value = volume.toString();
-  }
-}
+  },
+};
 
-class Activation {
-  db: Database;
+const Status = {
+  db: null as unknown as Database,
 
-  static async init(db: Database) {
-    const instance = new Activation(db);
-    await instance.updateUi();
-    return instance;
-  }
-
-  constructor(db: Database) {
+  async init(db: Database) {
     this.db = db;
 
     document
@@ -86,17 +80,17 @@ class Activation {
       .addEventListener("click", async () => {
         await this.toggleActivation();
       });
-  }
+  },
 
   async toggleActivation() {
     await sendMessage("activation-toggled", {});
     await this.updateUi();
-  }
+  },
 
   async disableUntilNextPage() {
     await sendMessage("disable-until-next-visit", {});
     await this.updateUi();
-  }
+  },
 
   async disableUntilTomorrow() {
     const dateTomorrowMorning = new Date();
@@ -107,7 +101,7 @@ class Activation {
     await sendMessage("disable-until", { untilMs: ts });
 
     await this.updateUi();
-  }
+  },
 
   async disableForTime(hours: number, minutes: number) {
     const diffMs = (hours * 60 * 60 + minutes * 60) * 1000;
@@ -119,7 +113,7 @@ class Activation {
     await sendMessage("disable-until", { untilMs: ts });
 
     await this.updateUi();
-  }
+  },
 
   async updateUi() {
     const url = await getCurrentBaseurl();
@@ -140,9 +134,9 @@ class Activation {
     } else {
       this.uiSetStatus("active", "");
     }
-  }
+  },
 
-  private uiSetStatus(
+  uiSetStatus(
     status: "active" | "inactive" | "websiteNotAdded" | "websiteInvalid",
     statusDescription: string,
   ) {
@@ -151,7 +145,7 @@ class Activation {
     )!;
     const elementStatusText = document.getElementById("text-activationStatus")!;
 
-    containerActivation.classList.remove("active", "inactive");
+    containerActivation.classList.remove("active", "inactive", "standby");
     switch (status) {
       case "active":
         elementStatusText.innerHTML = "Active";
@@ -172,53 +166,46 @@ class Activation {
 
     document.getElementById("text-statusDescription")!.innerHTML =
       statusDescription;
-  }
-}
+  },
+};
 
-class UrlList {
-  db: Database;
-  btnAddCurrentPage = document.getElementById("btn-addUrl")!;
-  urlContainer = document.getElementById("container-urlList")!;
+const UrlList = {
+  db: null as unknown as Database,
+  btnAddCurrentPage: document.getElementById("btn-addUrl")!,
+  urlContainer: document.getElementById("container-urlList")!,
 
-  static async init(db: Database) {
-    const urlList = new UrlList(db);
-    await urlList.updateUi();
-    return urlList;
-  }
+  async init(db: Database) {
+    this.db = db;
 
-  constructor(db: Database) {
     this.btnAddCurrentPage.addEventListener("click", async () => {
       const url = await getCurrentBaseurl();
       if (url) {
         await this.addUrl(url);
       }
     });
+  },
 
-    this.db = db;
-  }
-
-  addUrl = async (url: string) => {
+  async addUrl(url: string) {
     if (!url.includes(".")) {
       return;
     }
 
     await sendMessage("url-added", { url });
     await this.updateUi();
-  };
+    await Status.updateUi();
+  },
 
-  removeUrl = async (url: string) => {
+  async removeUrl(url: string) {
     await sendMessage("url-removed", { url });
     await this.updateUi();
-  };
-
-  private isInUrlList = async (url: string) => {
-    const urls = (await this.db.get("urlList")) as string[];
-    return urls.includes(url);
-  };
+    await Status.updateUi();
+  },
 
   async updateUi() {
-    const urlIsInList = await this.isInUrlList(await getCurrentBaseurl());
-    if (urlIsInList) {
+    const isInUrlList = (await this.db.get("urlList")).includes(
+      await getCurrentBaseurl(),
+    );
+    if (isInUrlList) {
       hideElement(this.btnAddCurrentPage);
     } else {
       unhideElement(this.btnAddCurrentPage);
@@ -248,8 +235,8 @@ class UrlList {
 
       this.urlContainer.appendChild(el);
     });
-  }
-}
+  },
+};
 
 const hideElement = (el: HTMLElement) => {
   el.classList.add("hidden");
