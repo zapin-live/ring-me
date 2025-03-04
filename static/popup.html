@@ -11,6 +11,19 @@
         font-size: 2rem;
       }
 
+      input[list] {
+        -webkit-appearance: none; /* Remove default arrow in Chrome/Safari */
+        -moz-appearance: none;    /* Remove default arrow in Firefox */
+        appearance: none;         /* Remove default arrow in other browsers */
+      }
+
+      input::-webkit-outer-spin-button,
+      input::-webkit-inner-spin-button {
+        -webkit-appearance: none;
+        margin: 0;
+      }
+
+
       #header-settings {
         display: inline;
         vertical-align: middle;
@@ -174,14 +187,30 @@
 
     <div id="container-controls">
       <div class="section">
-        <button id="btn-disableUntilNextPage" class="large">Disable until page reload</button>
+        <button id="btn-disableUntilNextPage" class="large">Disable until next visit</button>
       </div>
 
       <div class="section">
         <form id="form-disableForX">
           <button type="submit" id="btn-disableForX" class="large">Disable for</button>
-          <input class="number-input" type="number" id="input-disableForHours" name="hours" placeholder="hours">
-          <input class="number-input" type="number" id="input-disableForMinutes" name="mins" placeholder="mins">
+          <input class="number-input" type="number" id="input-disableForHours" name="hours" placeholder="hours" list="hour-values" min="0">
+          <datalist id="hour-values">
+            <option value="1"></option>
+            <option value="2"></option>
+            <option value="3"></option>
+            <option value="6"></option>
+            <option value="12"></option>
+            <option value="24"></option>
+          </datalist>
+          <input class="number-input" type="number" id="input-disableForMinutes" name="mins" placeholder="mins" list="minute-values" min="0">
+          <datalist id="minute-values">
+            <option value="1"></option>
+            <option value="5"></option>
+            <option value="10"></option>
+            <option value="15"></option>
+            <option value="30"></option>
+            <option value="60"></option>
+          </datalist>
           <button type="submit" id="btn-setDisableForX" class="large">set</button>
         </form>
       </div>
@@ -200,7 +229,7 @@
 
     <details class="section-container" style="margin-top: 15px">
       <summary>
-        <h2 id="header-settings">Sound setting</h2>
+        <h3 id="header-settings">Sound setting</h3>
       </summary>
       <div style="margin-top: 10px">
         <label for="input-volume">Quiet</label>
