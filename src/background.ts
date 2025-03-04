@@ -3,8 +3,7 @@ import { Database } from "./helpers/storage";
 
 const main = async () => {
   const db = await Database.init();
-  const state = await db.currentState();
-  const beeper = new Beeper(state.volume);
+  const beeper = await Beeper.init(db);
 
   // Listeners
   receiveMessage("check-beeper-temporarily-disabled", async () => {
@@ -19,25 +18,20 @@ const main = async () => {
     const newIsActive = !isActive;
 
     if (newIsActive) {
-      await db.set("disabledUntil", null);
-      beeper.enable();
+      await beeper.enable();
     } else {
-      beeper.disable();
+      await beeper.disable();
     }
 
-    await db.set("isActive", newIsActive);
     return newIsActive;
   });
 
   receiveMessage("disable-until-next-visit", async () => {
-    await db.set("disabledUntil", "next-visit");
-    beeper.disableTemporarily();
+    await beeper.disableTemporarily();
   });
 
   receiveMessage("disable-until", async (message) => {
-    await db.set("disabledUntil", message.untilMs);
-
-    beeper.disableUntil(message.untilMs);
+    await beeper.disableUntil(message.untilMs);
   });
 
   receiveMessage("url-added", async (message) => {
@@ -48,7 +42,7 @@ const main = async () => {
     await db.set("urlList", [...urls, message.url]);
 
     if (message.url === (await getCurrentUrl())) {
-      beeper.enable();
+      await beeper.enable();
     }
   });
 
@@ -58,31 +52,31 @@ const main = async () => {
     await db.set("urlList", newUrls);
 
     if (message.url === (await getCurrentUrl())) {
-      beeper.disable();
+      await beeper.disable();
     }
   });
 
   receiveMessage("volume-changed", async (message) => {
-    await db.set("volume", message.volume);
-    beeper.setVolume(message.volume);
+    await beeper.setVolume(message.volume);
   });
 
   let lastHostname = "";
   const onFocus = async (hostname: string) => {
+    console.debug("Focus changed to", hostname);
     const urlList = await db.get("urlList");
 
     if (urlList.includes(hostname)) {
       if (hostname === lastHostname) {
+        console.debug("Hostname did not change");
         return;
       }
 
       if ((await db.get("disabledUntil")) == "next-visit") {
-        await db.set("disabledUntil", null);
-        beeper.isTemporarilyDisabled = false;
+        await beeper.enable();
       }
 
       beeper.unMute();
-      beeper.beepIfActive({ delay: 900 });
+      await beeper.beepIfActive({ delay: 900 });
     } else {
       beeper.mute();
     }
@@ -114,13 +108,24 @@ const main = async () => {
 
 class Beeper {
   isMuted: boolean = true;
-  isEnabled: boolean = true;
+  isEnabled: boolean;
   isTemporarilyDisabled: boolean = false;
   volume: number;
   private disableTimeout: NodeJS.Timeout | null = null;
 
-  constructor(volume: number) {
-    this.volume = volume;
+  constructor(
+    readonly db: Database,
+    props: { volume: number; isEnabled: boolean },
+  ) {
+    this.volume = props.volume;
+    this.isEnabled = props.isEnabled;
+  }
+
+  static async init(db: Database) {
+    return new Beeper(db, {
+      volume: await db.get("volume"),
+      isEnabled: await db.get("isActive"),
+    });
   }
 
   startLoop = async () => {
@@ -135,44 +140,55 @@ class Beeper {
     if (props?.delay) {
       await new Promise((r) => setTimeout(r, props.delay));
     }
+
+    console.debug(`Beeping if active`);
     if (this.isEnabled && !this.isMuted && !this.isTemporarilyDisabled) {
-      try {
-        this.beep(90, 1000);
-      } catch (e) {
-        console.error(e);
-      }
+      console.debug("Beep!");
+      this.beep(90, 1000);
     }
   };
 
   beep = async (frequency: number, duration: number) => {
-    await createAudioOffscreen();
-    chrome.runtime.sendMessage({
-      type: "playSound",
-      volume: this.volume,
-      frequency,
-      duration,
-    });
+    try {
+      await createAudioOffscreen();
+      chrome.runtime.sendMessage({
+        type: "playSound",
+        volume: this.volume,
+        frequency,
+        duration,
+      });
+    } catch (e) {
+      console.error(e);
+    }
   };
 
-  disable = () => {
+  disable = async () => {
+    await this.db.set("isActive", false);
+    this.clearTimeout();
+
     this.isEnabled = false;
     this.isTemporarilyDisabled = false;
   };
 
-  disableTemporarily = () => {
+  disableTemporarily = async () => {
+    await this.db.set("disabledUntil", "next-visit");
+    this.clearTimeout();
+
     this.isTemporarilyDisabled = true;
   };
 
-  enable = () => {
-    if (this.disableTimeout) {
-      clearTimeout(this.disableTimeout);
-    }
+  enable = async () => {
+    await this.db.set("isActive", true);
+    await this.db.set("disabledUntil", null);
+    this.clearTimeout();
+
     this.isEnabled = true;
     this.isMuted = false;
     this.isTemporarilyDisabled = false;
   };
 
   disableUntil = async (timestamp: number) => {
+    await this.db.set("disabledUntil", timestamp);
     this.disable();
 
     const diffMs = timestamp - new Date().getTime();
@@ -181,12 +197,15 @@ class Beeper {
       return;
     }
 
-    if (this.disableTimeout) {
-      clearTimeout(this.disableTimeout);
-    }
     this.disableTimeout = setTimeout(() => {
       this.enable();
     }, diffMs);
+  };
+
+  clearTimeout = () => {
+    if (this.disableTimeout) {
+      clearTimeout(this.disableTimeout);
+    }
   };
 
   mute = () => {
@@ -197,7 +216,8 @@ class Beeper {
     this.isMuted = false;
   };
 
-  setVolume = (volume: number) => {
+  setVolume = async (volume: number) => {
+    await this.db.set("volume", volume);
     this.volume = volume;
   };
 
