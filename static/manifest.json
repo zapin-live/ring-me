@@ -25,8 +25,8 @@
   "commands": {
     "_execute_action": {
       "suggested_key": {
-        "default": "Ctrl+Shift+B"
-      }
-    }
+        "default": "Alt+Shift+O",
+        "mac": "Command+Shift+O"
+      } }
   }
 }
