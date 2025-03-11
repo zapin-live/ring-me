@@ -95,6 +95,14 @@ const main = async () => {
     await onFocus(await getCurrentUrl());
   });
 
+  chrome.idle.onStateChanged.addListener(async (state) => {
+    if (state === "active") {
+      await onFocus(await getCurrentUrl());
+    } else {
+      beeper.mute();
+    }
+  })
+
   chrome.windows.onFocusChanged.addListener(async (e) => {
     if (e === chrome.windows.WINDOW_ID_NONE) {
       beeper.mute();
@@ -141,9 +149,9 @@ class Beeper {
       await new Promise((r) => setTimeout(r, props.delay));
     }
 
-    console.debug(`Beeping if active`);
+    console.debug(`BEEPING IF ACTIVE. Enabled: ${this.isEnabled}, Muted: ${this.isMuted}, Temporarily Disabled: ${this.isTemporarilyDisabled}`);
     if (this.isEnabled && !this.isMuted && !this.isTemporarilyDisabled) {
-      console.debug("Beep!");
+      console.debug("BEEP!");
       this.beep(90, 1000);
     }
   };
@@ -183,13 +191,12 @@ class Beeper {
     this.clearTimeout();
 
     this.isEnabled = true;
-    this.isMuted = false;
     this.isTemporarilyDisabled = false;
   };
 
   disableUntil = async (timestamp: number) => {
     await this.db.set("disabledUntil", timestamp);
-    this.disable();
+    await this.disable();
 
     const diffMs = timestamp - new Date().getTime();
 
@@ -198,6 +205,7 @@ class Beeper {
     }
 
     this.disableTimeout = setTimeout(() => {
+      console.debug("Re-enabling after timeout");
       this.enable();
     }, diffMs);
   };
@@ -226,7 +234,7 @@ class Beeper {
       setTimeout(
         r,
         this.MIN_INTERVAL +
-          Math.random() * (this.MAX_INTERVAL - this.MIN_INTERVAL),
+        Math.random() * (this.MAX_INTERVAL - this.MIN_INTERVAL),
       ),
     );
   };
