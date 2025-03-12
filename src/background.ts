@@ -98,14 +98,14 @@ const main = async () => {
   chrome.idle.onStateChanged.addListener(async (state) => {
     if (state === "active") {
       await onFocus(await getCurrentUrl());
-    } else {
-      beeper.mute();
+    } else if (state === "locked") {
+      await onFocus("");
     }
   })
 
   chrome.windows.onFocusChanged.addListener(async (e) => {
     if (e === chrome.windows.WINDOW_ID_NONE) {
-      beeper.mute();
+      await onFocus("");
     } else {
       await onFocus(await getCurrentUrl());
     }
@@ -204,6 +204,7 @@ class Beeper {
       return;
     }
 
+    console.debug("Set timeout", new Date(timestamp));
     this.disableTimeout = setTimeout(() => {
       console.debug("Re-enabling after timeout");
       this.enable();
@@ -212,6 +213,7 @@ class Beeper {
 
   clearTimeout = () => {
     if (this.disableTimeout) {
+      console.log("clearing timeout")
       clearTimeout(this.disableTimeout);
     }
   };
