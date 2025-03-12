@@ -6,7 +6,8 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "build": "webpack --config webpack.prod.ts",
-    "start": "webpack --watch --config webpack.dev.ts"
+    "start": "webpack --watch --config webpack.dev.ts",
+    "pack": "npm run build && mkdir -p out && zip -r out/ring-me.zip dist"
   },
   "repository": {
     "type": "git",
