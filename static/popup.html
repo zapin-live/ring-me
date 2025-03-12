@@ -38,7 +38,7 @@
 
       #text-activationStatus {
         display: inline-block;
-        margin: 0 0 -3px 2px;
+        margin: 1px 0 -3px 2px;
         width: 75vw;
       }
 
@@ -47,15 +47,15 @@
       }
 
       #btn-activationStatus {
-        width: 30px;
-        height: 30px;
+        width: 31px;
+        height: 31px;
+        font-size: 20px;
         padding-top: 2px;
         margin-top: 5px;
         background: none;
-        border: 1px solid #444;
+        border: 2px solid;
         border-radius: 50%;
         vertical-align: top;
-        opacity: 0.5;
         cursor: pointer;
       }
 
@@ -71,19 +71,34 @@
       #container-activation-deactivation.active {
         background-color: #e6ffe6;
         color: #22bb33;
-        box-shadow: 0 0 8px #a6bfa6;
+        border-bottom: 1px solid #acd8ac;
+      }
+
+      #container-activation-deactivation.active #btn-activationStatus {
+        color: #22bb33;
+        border-color: #4dc75a;
       }
 
       #container-activation-deactivation.inactive {
         background-color: #ffe6e6;
         color: red;
-        box-shadow: 0 0 8px #bfa6a6;
+        border-bottom: 1px solid #ffb3b3;
+      }
+
+      #container-activation-deactivation.inactive #btn-activationStatus {
+        color: red;
+        border-color: #ff5c5c;
       }
 
       #container-activation-deactivation.standby {
         background-color: #ffe9c1;
         color: orange;
-        box-shadow: 0 0 8px #bfb5a6;
+        border-bottom: 1px solid #efd0a1;
+      }
+
+      #container-activation-deactivation.standby #btn-activationStatus {
+        color: orange;
+        border-color: orange;
       }
 
       #container-controls {
