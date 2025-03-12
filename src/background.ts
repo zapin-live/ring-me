@@ -217,10 +217,12 @@ class Beeper {
   };
 
   mute = () => {
+    console.debug("Muting");
     this.isMuted = true;
   };
 
   unMute = () => {
+    console.debug("Unmute");
     this.isMuted = false;
   };
 

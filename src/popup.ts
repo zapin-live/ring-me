@@ -1,7 +1,7 @@
 import { sendMessage } from "./helpers/messenger";
 import { Database } from "./helpers/storage";
 
-document.addEventListener("DOMContentLoaded", async function () {
+document.addEventListener("DOMContentLoaded", async function() {
   const db = await Database.init();
 
   Status.init(db);
@@ -130,7 +130,7 @@ const Status = {
     } else if (disabledUntil && disabledUntil > Date.now()) {
       this.uiSetStatus(
         "inactive",
-        `until ${new Date(disabledUntil).toLocaleString(getClientLocale())}`,
+        formatDisableUntil(disabledUntil),
       );
     } else if (!isActive) {
       this.uiSetStatus("inactive", "");
@@ -159,7 +159,7 @@ const Status = {
         containerActivation.classList.add("inactive");
         break;
       case "websiteNotAdded":
-        elementStatusText.innerHTML = "Website not added";
+        elementStatusText.innerHTML = "Website<br>not added";
         containerActivation.classList.add("standby");
         break;
       case "websiteInvalid":
@@ -251,7 +251,7 @@ const unhideElement = (el: HTMLElement) => {
 
 const getCurrentBaseurl = async () => {
   const url = await new Promise<string | null>((resolve) => {
-    chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
+    chrome.tabs.query({ active: true, currentWindow: true }, function(tabs) {
       const url = tabs[0].url;
       if (!url) {
         return resolve(null);
@@ -262,6 +262,45 @@ const getCurrentBaseurl = async () => {
 
   return url ? new URL(url).hostname : "";
 };
+
+function formatDisableUntil(disabledUntilMs: number): string {
+  const now = new Date();
+  const targetDate = new Date(disabledUntilMs);
+  const diffMs = disabledUntilMs - now.getTime();
+  const locale = getClientLocale();
+
+  const isToday = targetDate.toDateString() === now.toDateString();
+  if (isToday) {
+    const hours = Math.floor(diffMs / 3600000);
+    const minutes = Math.floor((diffMs % 3600000) / 60000);
+
+    if (hours > 0) {
+      return `for ${hours}&thinsp;h ${minutes + 1}&thinsp;min`;
+    } else if (minutes > 0) {
+      return `for ${minutes + 1} minutes`;
+    } else {
+      return `for less than a minute`;
+    }
+  }
+
+  const isTomorrow = new Date(now.getTime() + 86400000).toDateString() === targetDate.toDateString();
+  if (isTomorrow) {
+    const formatter = new Intl.DateTimeFormat(locale, {
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+    return `until tomorrow, ${formatter.format(targetDate)}`;
+  } else {
+    const dateFormatter = new Intl.DateTimeFormat(locale, {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+    return `on ${dateFormatter.format(targetDate)}`;
+  }
+}
 
 const getClientLocale = () => {
   if (typeof Intl !== "undefined") {
