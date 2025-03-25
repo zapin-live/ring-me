@@ -123,16 +123,23 @@ class Beeper {
 
   constructor(
     readonly db: Database,
-    props: { volume: number; isEnabled: boolean },
+    props: { volume: number; isEnabled: boolean; disabledUntil?: number },
   ) {
     this.volume = props.volume;
     this.isEnabled = props.isEnabled;
+
+    if (props.disabledUntil) {
+      this.setReactivationTimeout(props.disabledUntil);
+    }
   }
 
   static async init(db: Database) {
+    const disabledUntil = await db.get("disabledUntil") as number
+
     return new Beeper(db, {
       volume: await db.get("volume"),
       isEnabled: await db.get("isActive"),
+      disabledUntil: !isNaN(disabledUntil) ? disabledUntil : 0,
     });
   }
 
@@ -198,18 +205,24 @@ class Beeper {
     await this.db.set("disabledUntil", timestamp);
     await this.disable();
 
+    this.setReactivationTimeout(timestamp)
+
+    console.debug("Set timeout", new Date(timestamp));
+
+  };
+
+  setReactivationTimeout = async (timestamp: number) => {
     const diffMs = timestamp - new Date().getTime();
 
     if (diffMs < 0) {
       return;
     }
 
-    console.debug("Set timeout", new Date(timestamp));
     this.disableTimeout = setTimeout(() => {
       console.debug("Re-enabling after timeout");
       this.enable();
     }, diffMs);
-  };
+  }
 
   clearTimeout = () => {
     if (this.disableTimeout) {
