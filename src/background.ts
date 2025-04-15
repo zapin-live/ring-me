@@ -98,15 +98,21 @@ const main = async () => {
     await onFocus(await getCurrentUrl());
   });
 
+  const isVersionChange = async () => {
+    const lastVersionHash = await db.get("lastVersionHash")
+    return lastVersionHash && lastVersionHash !== await getVersionHash()
+  }
+
   let lastIdleState: chrome.idle.IdleState = "active";
   chrome.idle.onStateChanged.addListener(async (state) => {
     console.debug("Idle state changed:", state);
     if (state === "active" && lastIdleState === "locked") {
-      if (await db.get("lastVersionHash") !== await getVersionHash()) {
+      if (await isVersionChange()) {
         // Skip beeper activation if the browser was updated
         return
       }
 
+      await db.set("lastVersionHash", 0);
       await onFocus(await getCurrentUrl());
     } else if (state === "locked") {
       // used to prevent beeping after browser autoupdate
@@ -126,6 +132,11 @@ const main = async () => {
     }
   });
 
+
+  if (await isVersionChange()) {
+    // Skip beeper activation if the browser was updated
+    await beeper.disableTemporarily();
+  }
   await beeper.startLoop();
 };
 
@@ -247,7 +258,6 @@ class Beeper {
 
   clearTimeout = () => {
     if (this.disableTimeout) {
-      console.log("clearing timeout")
       clearTimeout(this.disableTimeout);
     }
   };
