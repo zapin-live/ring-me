@@ -1,5 +1,6 @@
 import { receiveMessage } from "./helpers/messenger";
 import { Database } from "./helpers/storage";
+import { getVersionHash } from "./helpers/version";
 
 const main = async () => {
   const db = await Database.init();
@@ -14,6 +15,7 @@ const main = async () => {
     const isActive =
       (await db.get("isActive")) &&
       !(await db.get("disabledUntil")) &&
+      !(await db.get("disabledTemporarily")) &&
       !beeper.isTemporarilyDisabled;
     const newIsActive = !isActive;
 
@@ -71,7 +73,7 @@ const main = async () => {
         return;
       }
 
-      if ((await db.get("disabledUntil")) == "next-visit") {
+      if ((await db.get("disabledTemporarily"))) {
         await beeper.enable();
       }
 
@@ -86,24 +88,37 @@ const main = async () => {
 
   chrome.tabs.onUpdated.addListener(async (_, changeInfo, __) => {
     if (changeInfo?.url) {
-      const hostname = new URL(changeInfo.url).hostname;
-      await onFocus(hostname);
+      console.debug("Tab updated", changeInfo.url);
+      await onFocus(await getCurrentUrl());
     }
   });
 
   chrome.tabs.onActivated.addListener(async () => {
+    console.debug("Tab activated");
     await onFocus(await getCurrentUrl());
   });
 
+  let lastIdleState: chrome.idle.IdleState = "active";
   chrome.idle.onStateChanged.addListener(async (state) => {
-    if (state === "active") {
+    console.debug("Idle state changed:", state);
+    if (state === "active" && lastIdleState === "locked") {
+      if (await db.get("lastVersionHash") !== await getVersionHash()) {
+        // Skip beeper activation if the browser was updated
+        return
+      }
+
       await onFocus(await getCurrentUrl());
     } else if (state === "locked") {
+      // used to prevent beeping after browser autoupdate
+      db.set("lastVersionHash", await getVersionHash());
+
       await onFocus("");
     }
+    lastIdleState = state;
   })
 
   chrome.windows.onFocusChanged.addListener(async (e) => {
+    console.debug("Window focus changed", e);
     if (e === chrome.windows.WINDOW_ID_NONE) {
       await onFocus("");
     } else {
@@ -136,11 +151,17 @@ class Beeper {
   static async init(db: Database) {
     const disabledUntil = await db.get("disabledUntil") as number
 
-    return new Beeper(db, {
+    const beeper = new Beeper(db, {
       volume: await db.get("volume"),
       isEnabled: await db.get("isActive"),
-      disabledUntil: !isNaN(disabledUntil) ? disabledUntil : 0,
+      disabledUntil: isNaN(disabledUntil) ? 0 : disabledUntil,
     });
+
+    const shouldReenable = disabledUntil && !isNaN(disabledUntil) && disabledUntil < Date.now()
+    if (shouldReenable) {
+      await beeper.enable();
+    }
+    return beeper;
   }
 
   startLoop = async () => {
@@ -156,21 +177,20 @@ class Beeper {
       await new Promise((r) => setTimeout(r, props.delay));
     }
 
-    console.debug(`BEEPING IF ACTIVE. Enabled: ${this.isEnabled}, Muted: ${this.isMuted}, Temporarily Disabled: ${this.isTemporarilyDisabled}`);
     if (this.isEnabled && !this.isMuted && !this.isTemporarilyDisabled) {
       console.debug("BEEP!");
-      this.beep(90, 1000);
+      this.beep({ frequency: 90, duration: 1000, randomness: 0.1 });
     }
   };
 
-  beep = async (frequency: number, duration: number) => {
+  beep = async (p: { frequency: number, duration: number, randomness: number }) => {
     try {
       await createAudioOffscreen();
       chrome.runtime.sendMessage({
         type: "playSound",
         volume: this.volume,
-        frequency,
-        duration,
+        frequency: p.frequency * (1 + p.randomness * (Math.random() - 0.5)),
+        duration: p.duration,
       });
     } catch (e) {
       console.error(e);
@@ -186,7 +206,7 @@ class Beeper {
   };
 
   disableTemporarily = async () => {
-    await this.db.set("disabledUntil", "next-visit");
+    await this.db.set("disabledTemporarily", true);
     this.clearTimeout();
 
     this.isTemporarilyDisabled = true;
@@ -195,6 +215,7 @@ class Beeper {
   enable = async () => {
     await this.db.set("isActive", true);
     await this.db.set("disabledUntil", null);
+    await this.db.set("disabledTemporarily", false);
     this.clearTimeout();
 
     this.isEnabled = true;
@@ -218,9 +239,9 @@ class Beeper {
       return;
     }
 
-    this.disableTimeout = setTimeout(() => {
+    this.disableTimeout = setTimeout(async () => {
       console.debug("Re-enabling after timeout");
-      this.enable();
+      await this.enable();
     }, diffMs);
   }
 

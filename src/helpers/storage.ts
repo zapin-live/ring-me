@@ -1,6 +1,6 @@
 export const storageSet = async (key: string, value: unknown) => {
   return new Promise<void>((resolve, reject) => {
-    chrome.storage.local.set({ [key]: value }, function () {
+    chrome.storage.local.set({ [key]: value }, function() {
       if (chrome.runtime.lastError) {
         reject(chrome.runtime.lastError.message);
       } else {
@@ -13,7 +13,7 @@ export const storageSet = async (key: string, value: unknown) => {
 
 export const storageGet = async (key: string) => {
   return new Promise((resolve, reject) => {
-    chrome.storage.local.get(key, function (result) {
+    chrome.storage.local.get(key, function(result) {
       if (chrome.runtime.lastError) {
         reject(chrome.runtime.lastError.message);
       } else {
@@ -28,8 +28,10 @@ const DefaultValues = {
   isActive: true,
   statusDescription: "",
   urlList: [] as string[],
-  disabledUntil: null as number | null | "next-visit",
+  disabledUntil: null as number | null,
+  disabledTemporarily: false,
   volume: 20,
+  lastVersionHash: 0
 };
 
 export type StorageKey = keyof typeof DefaultValues;
