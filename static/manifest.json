@@ -21,12 +21,5 @@
   "background": {
     "service_worker": "./background.js"
   },
-  "permissions": ["tabs", "storage", "offscreen", "idle"],
-  "commands": {
-    "_execute_action": {
-      "suggested_key": {
-        "default": "Alt+Shift+O",
-        "mac": "Command+Shift+O"
-      } }
-  }
+  "permissions": ["tabs", "storage", "offscreen", "idle"]
 }
