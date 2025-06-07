@@ -4,7 +4,6 @@ export const storageSet = async (key: string, value: unknown) => {
       if (chrome.runtime.lastError) {
         reject(chrome.runtime.lastError.message);
       } else {
-        console.debug(`SET ${key} = ${value}`);
         resolve();
       }
     });
@@ -17,7 +16,6 @@ export const storageGet = async (key: string) => {
       if (chrome.runtime.lastError) {
         reject(chrome.runtime.lastError.message);
       } else {
-        console.debug(`-GET ${key} = ${result[key]}`);
         resolve(result[key]);
       }
     });

@@ -58,10 +58,6 @@ export const receiveMessage = async <T extends keyof Message>(
 
 chrome.runtime.onMessage.addListener((message, _, sendResponse) => {
   if (receivers[message.type]) {
-    console.debug(
-      `received Message for ${receivers[message.type].length} subs:`,
-      message,
-    );
     receivers[message.type].forEach((handler) => {
       handler(message).then((res) => {
         sendResponse(res);
