@@ -98,27 +98,26 @@ const main = async () => {
     await onFocus(await getCurrentUrl());
   });
 
-  const isVersionChange = async () => {
-    const lastVersionHash = await db.get("lastVersionHash")
-    return lastVersionHash && lastVersionHash !== await getVersionHash()
-  }
+
+  let hasWindowFocus = false;
 
   let lastIdleState: chrome.idle.IdleState = "active";
   chrome.idle.onStateChanged.addListener(async (state) => {
+    if (!hasWindowFocus) {
+      return
+    }
+
     console.debug("Idle state changed:", state);
     if (state === "active" && lastIdleState === "locked") {
-      if (await isVersionChange()) {
-        // Skip beeper activation if the browser was updated
-        return
-      }
-
-      await db.set("lastVersionHash", 0);
       await onFocus(await getCurrentUrl());
+
+      // used to prevent beeping after browser autoupdate
+      await db.set("lastVersionHash", 0);
     } else if (state === "locked") {
+      await onFocus("");
+
       // used to prevent beeping after browser autoupdate
       db.set("lastVersionHash", await getVersionHash());
-
-      await onFocus("");
     }
     lastIdleState = state;
   })
@@ -126,14 +125,18 @@ const main = async () => {
   chrome.windows.onFocusChanged.addListener(async (e) => {
     console.debug("Window focus changed", e);
     if (e === chrome.windows.WINDOW_ID_NONE) {
+      hasWindowFocus = false;
       await onFocus("");
     } else {
+      hasWindowFocus = true;
       await onFocus(await getCurrentUrl());
     }
   });
 
 
-  if (await isVersionChange()) {
+  const lastVersionHash = await db.get("lastVersionHash")
+  const isVersionChange = lastVersionHash && lastVersionHash !== await getVersionHash()
+  if (isVersionChange) {
     // Skip beeper activation if the browser was updated
     await beeper.disableTemporarily();
   }
@@ -188,7 +191,10 @@ class Beeper {
       await new Promise((r) => setTimeout(r, props.delay));
     }
 
-    if (this.isEnabled && !this.isMuted && !this.isTemporarilyDisabled) {
+    const isLocked = await chrome.idle.queryState(15) === "locked";
+
+    if (this.isEnabled && !this.isMuted && !this.isTemporarilyDisabled && !isLocked) {
+      console.log(`isEnabled ${this.isEnabled}, isMuted ${this.isMuted}, isTemporarilyDisabled ${this.isTemporarilyDisabled}, isLocked ${isLocked}`);
       console.debug("BEEP!");
       this.beep({ frequency: 90, duration: 1000, randomness: 0.1 });
     }
