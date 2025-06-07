@@ -1,4 +1,4 @@
-function beep(props: { volume: number; frequency: number; duration: number }) {
+function beep(props: { volume: number; frequency: number; duration: number, type?: OscillatorType }) {
   const audio = new (window.AudioContext ||
     (window as any).webkitAudioContext)();
 
@@ -6,7 +6,7 @@ function beep(props: { volume: number; frequency: number; duration: number }) {
   volume.gain.value = props.volume / 100;
 
   const osc = audio.createOscillator();
-  osc.type = "square";
+  osc.type = props.type ?? "square";
   osc.frequency.value = props.frequency;
 
   osc.connect(volume);
@@ -25,6 +25,7 @@ chrome.runtime.onMessage.addListener((message) => {
       volume: message.volume,
       frequency: message.frequency,
       duration: message.duration,
+      type: message.waveType,
     });
   }
 });

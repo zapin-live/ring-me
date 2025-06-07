@@ -119,14 +119,14 @@ const Status = {
     const url = await getCurrentBaseurl();
     const urlList = (await this.db.get("urlList")) as string[];
     const disabledUntil = await this.db.get("disabledUntil");
-    const disabledTemporarily = await this.db.get("disabledTemporarily");
+    const isDisabledTemporarily = await this.db.get("isDisabledTemporarily");
     const isActive = await this.db.get("isActive");
 
     if (!(url && url.includes("."))) {
       this.uiSetStatus("websiteInvalid", "");
     } else if (!urlList.includes(url)) {
       this.uiSetStatus("websiteNotAdded", "");
-    } else if (disabledTemporarily) {
+    } else if (isDisabledTemporarily) {
       this.uiSetStatus("inactive", "until next visit");
     } else if (disabledUntil && disabledUntil > Date.now()) {
       this.uiSetStatus(

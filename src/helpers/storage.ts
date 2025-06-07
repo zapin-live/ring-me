@@ -27,7 +27,7 @@ const DefaultValues = {
   statusDescription: "",
   urlList: [] as string[],
   disabledUntil: null as number | null,
-  disabledTemporarily: false,
+  isDisabledTemporarily: false,
   volume: 20,
   lastVersionHash: 0
 };

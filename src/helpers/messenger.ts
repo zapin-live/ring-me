@@ -7,10 +7,6 @@ export type Message = {
     type: "beep";
   };
 
-  "check-beeper-temporarily-disabled": {
-    type: "check-beeper-temporarily-disabled";
-  };
-
   "disable-until-next-visit": {
     type: "disable-until-next-visit";
   };
