@@ -68,7 +68,7 @@ const main = async () => {
       if (hostnameDidChange) {
         beeper.startLoop();
         await beeper.unsetDisableTemporarily();
-        await beeper.beepIfActive({ frequency: 200, duration: 250, randomness: 0, waveType: "triangle" });
+        await beeper.preBeepIfActive();
       }
     } else {
       beeper.stopLoop();
@@ -200,6 +200,13 @@ class Beeper {
     }
   };
 
+  preBeepIfActive = async () => {
+    const duration = 250
+    await this.beepIfActive({ frequency: 340, duration, randomness: 0, waveType: "triangle" });
+    await new Promise((resolve) => setTimeout(resolve, duration));
+    await this.beepIfActive({ frequency: 220, duration, randomness: 0, waveType: "triangle" });
+  }
+
   beep = async (p: BeepSoundSetting) => {
     try {
       await createAudioOffscreen();
@@ -260,6 +267,9 @@ class Beeper {
     this.disableTimeout = setTimeout(async () => {
       console.debug("Re-enabling after timeout");
       await this.enable();
+      if (this.isLoopRunning) {
+        await this.preBeepIfActive();
+      }
       await this.db.set("disabledUntil", null);
     }, diffMs);
   }
