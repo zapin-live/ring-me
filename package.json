@@ -1,6 +1,6 @@
 {
   "name": "ring-me",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "A chrome extension which plays some sounds on configured websites",
   "main": "index.js",
   "scripts": {
