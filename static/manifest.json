@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
-  "name": "Ring Me",
-  "description": "Plays a loud sound when visiting websites you have predefined",
+  "name": "Ring Me - Reduce screen time",
+  "description": "Plays a loud sound when visiting websites you want to avoid",
   "version": "1.0",
   "action": {
     "default_icons": {
