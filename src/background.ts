@@ -162,6 +162,9 @@ class Beeper {
 
   startLoop = async () => {
     console.debug("Starting beeper loop");
+    if (this.isLoopRunning) {
+      return;
+    }
 
     const loop = () => {
       this.loopTimeout = setTimeout(async () => {
@@ -287,7 +290,6 @@ class Beeper {
     await this.db.set("volume", volume);
     this.volume = volume;
   };
-
 
   private MIN_INTERVAL = 5000;
   private MAX_INTERVAL = 30000;
