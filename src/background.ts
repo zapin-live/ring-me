@@ -128,7 +128,6 @@ const main = async () => {
     // Skip beeper activation if the browser was updated
     await beeper.disableTemporarily();
   }
-  await beeper.startLoop();
 };
 
 class Beeper {
